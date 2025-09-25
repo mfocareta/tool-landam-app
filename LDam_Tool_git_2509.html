@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tool di Classificazione Landslide Dams</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .custom-radio:checked + label {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+        }
+        #progress-bar {
+            transition: width 0.4s ease-in-out;
+        }
+
+        /* Colori per i livelli di rischio/impatto */
+        .level-green { background-color: #d4edda; color: #155724; border-left: 4px solid #28a745; padding: 0.5rem; margin-bottom: 0.25rem; border-radius: 0.25rem;} /* Success */
+        .level-yellow { background-color: #fff3cd; color: #856404; border-left: 4px solid #ffc107; padding: 0.5rem; margin-bottom: 0.25rem; border-radius: 0.25rem;} /* Warning */
+        .level-red { background-color: #f8d7da; color: #721c24; border-left: 4px solid #dc3545; padding: 0.5rem; margin-bottom: 0.25rem; border-radius: 0.25rem;} /* Danger */
+        .level-neutral { background-color: #e2e3e5; color: #383d41; border-left: 4px solid #6c757d; padding: 0.5rem; margin-bottom: 0.25rem; border-radius: 0.25rem;} /* Neutral/Info */
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div id="app" class="w-full max-w-5xl bg-white rounded-2xl shadow-lg p-6 md:p-8">
+        
+        <header id="app-header" class="text-center mb-4">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Tool di Classificazione Landslide Dams</h1>
+            <p class="text-gray-500 mt-1">Guida interattiva per la classificazione degli sbarramenti da frana.</p>
+        </header>
+
+        <div id="progress-container" class="w-full bg-gray-200 rounded-full h-2.5 mb-6">
+            <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+        </div>
+        
+        <main id="content-container">
+            <p class="text-center text-gray-500 p-8">Inizializzazione dell'applicazione...</p>
+        </main>
+
+        <footer id="navigation" class="mt-8 flex justify-between items-center" style="visibility: hidden;">
+            <button id="prev-btn" class="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50">Indietro</button>
+            <div id="step-indicator" class="text-sm text-gray-500"></div>
+            <button id="next-btn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">Avanti</button>
+        </footer>
+
+    </div>
+
+    <script>
+        console.log("Tool di Classificazione: Script avviato.");
+
+        const classificationData = {
+            alluvialPlain: [{ name: 'Presente', code: 'P', description: 'in un contesto con pianura alluvionale' }, { name: 'Assente', code: 'A', description: 'in un contesto senza pianura alluvionale' }],
+            riverbed: [{ name: 'Fisso', code: 'F', description: 'un alveo fisso (F)' }, { name: 'Rettilineo a barre alternate', code: 'S', description: 'un alveo rettilineo a barre alternate (S)' }, { name: 'Intrecciato', code: 'B', description: 'un alveo intrecciato (B)' }, { name: 'Sinuoso / Meandriforme', code: 'M', description: 'un alveo sinuoso/meandriforme (M)' }, { name: 'Divagante (Wandering)', code: 'W', description: 'un alveo divagante (Wandering, W)' }],
+            grainSize: [{ name: 'Grossolana (ghiaia)', code: 'g', description: 'con trasporto solido grossolano (g)' }, { name: 'Media (sabbia)', code: 'm', description: 'con trasporto solido di medie dimensioni (m)' }, { name: 'Fine (limo/argilla)', code: 'f', description: 'con trasporto solido fine (f)' }],
+            landslideType: [{ name: 'Ribaltamento / Crollo', code: 'T', description: 'un ribaltamento/crollo (T)' }, { name: 'Scivolamento (Rot./Trasl.)', code: 'S', description: 'uno scivolamento (S)' }, { name: 'Colamento', code: 'F', description: 'un colamento (F)' }, { name: 'Complessa', code: 'C', description: 'una frana complessa (C)' }],
+            velocity: [{ name: 'Classe 1 (lenta)', code: '1', description: 'con velocità lenta (Classe 1)' }, { name: 'Classe 2 (moderata)', code: '2', description: 'con velocità moderata (Classe 2)' }, { name: 'Classe 3 (rapida)', code: '3', description: 'con velocità rapida (Classe 3)' }],
+            material: [{ name: 'Roccia', code: 'r', description: 'in roccia (r)' }, { name: 'Detrito', code: 'd', description: 'in detrito (d)' }, { name: 'Terra', code: 'e', description: 'in terra (e)' }, { name: 'Misto', code: 'm', description: 'in materiale misto (m)' }],
+            volume: [
+                { name: '< 1.000 m³', code: '< 1.000' },
+                { name: '1.000 – 10.000 m³', code: '1.000 – 10.000' },
+                { name: '10.000 – 100.000 m³', code: '10.000 – 100.000' },
+                { name: '100.000 – 1 ml m³', code: '100.000 – 1 ml' },
+                { name: '1 ml – 10 ml m³', code: '1 ml – 10 ml' },
+                { name: '10 ml – 100 ml m³', code: '10 ml – 100 ml' },
+                { name: '> 100 ml m³', code: '> 100 ml' }
+            ]
+        };
+
+        const colorMap = {
+            alluvialPlain: { 'Presente': '#a7f3d0', 'Assente': '#fecaca' },
+            riverbed: { 'Fisso': '#67e8f9', 'Rettilineo a barre alternate': '#a5b4fc', 'Intrecciato': '#f0abfc', 'Sinuoso / Meandriforme': '#fdba74', 'Divagante (Wandering)': '#fde047' },
+            grainSize: { 'Grossolana (ghiaia)': '#fca5a5', 'Media (sabbia)': '#fdba74', 'Fine (limo/argilla)': '#d4d4d8' },
+            landslideType: { 'Ribaltamento / Crollo': '#ef4444', 'Scivolamento (Rot./Trasl.)': '#f97316', 'Colamento': '#eab308', 'Complessa': '#84cc16' },
+            velocity: { 'Classe 1 (lenta)': '#22c55e', 'Classe 2 (moderata)': '#f59e0b', 'Classe 3 (rapida)': '#dc2626' },
+            material: { 'Roccia': '#78716c', 'Detrito': '#ca8a04', 'Terra': '#a16207', 'Misto': '#d6d3d1' },
+            volume: {
+                '< 1.000 m³': '#d1e7dd', '1.000 – 10.000 m³': '#cff4fc',
+                '10.000 – 100.000 m³': '#e2e3e5', '100.000 – 1 ml m³': '#f8d7da',
+                '1 ml – 10 ml m³': '#dbe7c9', '10 ml – 100 ml m³': '#f0e68c',
+                '> 100 ml m³': '#ffc0cb'
+            }
+        };
+
+        const riskLevelMapping = {
+            'Probability of lake formation': {
+                'extreme': 'red', 'very high': 'red',
+                'high': 'yellow', 'moderate': 'yellow',
+                'low': 'green', 'very low': 'green'
+            },
+            'Lake Lenght/Width ratio': {
+                '>>1': 'green', '>1': 'green',
+                '~1': 'yellow',
+                '<<1': 'red', '<1': 'red'
+            },
+            'Lake formation time (up to overtopping dam)': {
+                'short': 'red', 'moderately short': 'red',
+                'moderately long': 'yellow',
+                'long': 'green', 'very long': 'green'
+            },
+            'Lake infilling time': {
+                 'short': 'red', 'moderately short': 'red',
+                'moderately long': 'yellow',
+                'long': 'green', 'very long': 'green'
+            },
+            'Dam Height/Width ratio': {
+                '>1': 'red',
+                '~1': 'yellow',
+                '<1': 'green', '<<1': 'green'
+            },
+            'Dam permeability': {
+                'high': 'green',
+                'medium': 'yellow',
+                'low': 'red'
+            },
+            'Dam life (stability)': {
+                'short': 'red', 'from short to moderately short': 'red',
+                'moderately short': 'red', 'from moderately short to moderately long': 'red',
+                'moderately long': 'yellow',
+                'long': 'green', 'very long': 'green', 'long or very long': 'green'
+            },
+            'Possibility of flooding downstream': {
+                'very high': 'red', 'high': 'red', 'moderate': 'red',
+                'low': 'yellow',
+                'very low': 'green'
+            },
+            'Time to restore the original situation': {
+                'long': 'red', 'very long': 'red',
+                'moderately long': 'yellow',
+                'short': 'green', 'moderately short': 'green'
+            },
+            'Possibility of preventing overflow': {
+                'low': 'red',
+                'medium': 'yellow',
+                'high': 'green'
+            }
+        };
+
+        function getLevelColorClass(characteristic, value) {
+            const cleanedValue = (value || '').toLowerCase().trim().split(',')[0].split('(')[0].trim();
+            const mapping = riskLevelMapping[characteristic];
+            if (mapping && mapping[cleanedValue]) {
+                return `level-${mapping[cleanedValue]}`;
+            }
+            if(value.includes(' to ')){
+                const firstValue = value.split(' to ')[0].replace('from ','').trim();
+                 if (mapping && mapping[firstValue]) {
+                    return `level-${mapping[firstValue]}`;
+                }
+            }
+            return 'level-neutral';
+        }
+
+        const categoryLabels = {
+            alluvialPlain: 'Pianura Alluvionale',
+            riverbed: 'Tipologia di Alveo',
+            grainSize: 'Granulometria',
+            landslideType: 'Tipologia di Frana',
+            velocity: 'Velocità',
+            material: 'Materiale',
+            volume: 'Volume della Frana'
+        };
+
+        const stepKeys = ['alluvialPlain', 'riverbed', 'grainSize', 'landslideType', 'velocity', 'volume', 'material'];
+
+        const appState = {
+            currentStep: 0,
+            selections: { alluvialPlain: null, riverbed: null, grainSize: null, landslideType: null, velocity: null, volume: null, material: null }
+        };
+
+        const contentContainer = document.getElementById('content-container');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const stepIndicator = document.getElementById('step-indicator');
+        const navigation = document.getElementById('navigation');
+        const progressBar = document.getElementById('progress-bar');
+        const progressContainer = document.getElementById('progress-container');
+		
+		const damDetailsCsvData = `,Probability of lake formation,Lake Lenght/Width ratio,Lake formation time (up to overtopping dam),Lake infilling time,Dam Height/Width ratio,Dam permeability,Dam life (stability),Possibility of flooding downstream,Time to restore the original situation,Possibility of preventing overflow
+FgT3r,high,>>1,moderately long,moderately long,>1,high,long or very long,very low,long,medium
+FgT3d,very high,>>1,moderately short,moderately short,~1,medium,moderately long,moderate,moderately long,medium
+FgT3e,extreme,>>1,short,short,<<1,low,from moderately short to moderately long,low,short,low
+FgT3m,very high,>>1,short,short,<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+FgS1r,high,>>1,short,short,<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+FgS2r,very high,>>1,short,short,<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+FgS3r,extreme,>>1,moderately long,moderately long,>1,high,long or very long,very low,long,medium
+FgS1d,low,>>1,moderately short,moderately short,~1,medium,moderately long,moderate,moderately long,medium
+FgS2e,moderate,>>1,short,short,<<1,low,from moderately short to moderately long,low,short,low
+FgS3m,high,>>1,short,short,<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+FgF1d,high,>>1,moderately short,moderately short,<1,medium,moderately long,moderate,moderately long,medium
+FgF2d,very high,>>1,short,short,<<1,low,from short to moderately short,low,short,low
+FgF3d,extreme,>>1,short,short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+FmT3r,high,>>1,moderately long,long,>1,high,long or very long,very low,long,medium
+FmT3d,very high,>>1,moderately short,moderately long,~1,medium,moderately long,moderate,moderately long,medium
+FmT3e,extreme,>>1,short,moderately short,<<1,low,from moderately short to moderately long,low,short,low
+FmT3m,very high,>>1,short,moderately short,<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+FmS1r,high,>>1,moderately long,long,>1,high,long or very long,very low,long,medium
+FmS2r,very high,>>1,moderately long,long,>1,high,long or very long,very low,long,medium
+FmS3r,extreme,>>1,moderately long,long,>1,high,long or very long,very low,long,medium
+FmS1d,low,>>1,moderately short,moderately long,~1,medium,moderately long,moderate,moderately long,medium
+FmS2d,moderate,>>1,moderately short,moderately long,~1,medium,moderately long,moderate,moderately long,medium
+FmS3d,high,>>1,moderately short,moderately long,~1,medium,moderately long,moderate,moderately long,medium
+FmS1e,low,>>1,short,moderately short,<<1,low,from moderately short to moderately long,low,short,low
+FmS2e,moderate,>>1,short,moderately short,<<1,low,from moderately short to moderately long,low,short,low
+FmS3e,high,>>1,short,moderately short,<<1,low,from moderately short to moderately long,low,short,low
+FmS1m,low,>>1,short,moderately short,<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+FmS2m,moderate,>>1,short,moderately short,<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+FmS3m,high,>>1,short,moderately short,<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+FmF1d,high,>>1,moderately short,moderately long,<1,medium,moderately long,moderate,moderately long,medium
+FmF2d,very high,>>1,moderately short,moderately long,<1,medium,moderately long,moderate,moderately long,medium
+FmF3d,extreme,>>1,moderately short,moderately long,<1,medium,moderately long,moderate,moderately long,medium
+FmF1e,high,>>1,short,moderately short,<<1,low,from short to moderately short,low,short,low
+FmF2e,very high,>>1,short,moderately short,<<1,low,from short to moderately short,low,short,low
+FmF3e,extreme,>>1,short,moderately short,<<1,low,from short to moderately short,low,short,low
+FmF1m,high,>>1,short,moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+FmF2m,very high,>>1,short,moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+FmF3m,extreme,>>1,short,moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+FfT3r,high,>>1,moderately long,long,>1,high,long or very long,very low,long,medium
+FfT3d,very high,>>1,moderately short,moderately long,~1,medium,moderately long,moderate,moderately long,medium
+FfT3e,extreme,>>1,short,moderately short,<<1,low,from moderately short to moderately long,low,short,low
+FfT3m,very high,>>1,short,moderately short,<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+FfS1r,high,>>1,moderately long,long,>1,high,long or very long,very low,long,medium
+FfS2r,very high,>>1,moderately long,long,>1,high,long or very long,very low,long,medium
+FfS3r,extreme,>>1,moderately long,long,>1,high,long or very long,very low,long,medium
+FfS1d,low,>>1,moderately short,moderately long,~1,medium,moderately long,moderate,moderately long,medium
+FfS2d,moderate,>>1,moderately short,moderately long,~1,medium,moderately long,moderate,moderately long,medium
+FfS3d,high,>>1,moderately short,moderately long,~1,medium,moderately long,moderate,moderately long,medium
+FfS1e,low,>>1,moderately short,moderately long,~1,medium,moderately long,moderate,moderately long,medium
+FfS2e,moderate,>>1,short,moderately short,<<1,low,from moderately short to moderately long,low,short,low
+FfS3e,high,>>1,short,moderately short,<<1,low,from moderately short to moderately long,low,short,low
+FfS1m,low,>>1,short,moderately short,<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+FfS2m,moderate,>>1,short,moderately short,<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+FfS3m,high,>>1,short,moderately short,<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+FfF1d,high,>>1,moderately short,moderately long,<1,medium,moderately long,moderate,moderately long,medium
+FfF2d,very high,>>1,moderately short,moderately long,<1,medium,moderately long,moderate,moderately long,medium
+FfF3d,extreme,>>1,moderately short,moderately long,<1,medium,moderately long,moderate,moderately long,medium
+FfF1e,high,>>1,short,moderately short,<<1,low,from short to moderately short,low,short,low
+FfF2e,very high,>>1,short,moderately short,<<1,low,from short to moderately short,low,short,low
+FfF3e,extreme,>>1,short,moderately short,<<1,low,from short to moderately short,low,short,low
+FfF1m,high,>>1,short,moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+FfF2m,very high,>>1,short,moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+FfF3m,extreme,>>1,short,moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+SgT3r,high,>1,moderately short,moderately short,>1,high,long or very long,very low,long,medium
+SgT3d,very high,>1,short,short,~1,medium,moderately long,moderate,moderately long,low
+SgT3e,extreme,>1,short,short,<<1,low,from moderately short to moderately long,low,short,low
+SgT3m,very high,>1,short,short,<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+SgS1r,high,>1,moderately short,moderately short,>1,high,long or very long,very low,long,medium
+SgS2r,very high,>1,moderately short,moderately short,>1,high,long or very long,very low,long,medium
+SgS3r,extreme,>1,moderately short,moderately short,>1,high,long or very long,very low,long,medium
+SgS1d,low,>1,short,short,~1,medium,moderately long,moderate,moderately long,low
+SgS2d,moderate,>1,short,short,~1,medium,moderately long,moderate,moderately long,low
+SgS3d,high,>1,short,short,~1,medium,moderately long,moderate,moderately long,low
+SgS1e,low,>1,short,short,<<1,low,from moderately short to moderately long,low,short,low
+SgS2e,moderate,>1,short,short,<<1,low,from moderately short to moderately long,low,short,low
+SgS3e,high,>1,short,short,<<1,low,from moderately short to moderately long,low,short,low
+SgS1m,low,>1,short,short,<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+SgS2m,moderate,>1,short,short,<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+SgS3m,high,>1,short,short,<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+SgF1d,high,>1,short,short,<1,medium,moderately long,moderate,moderately long,low
+SgF2d,very high,>1,short,short,<1,medium,moderately long,moderate,moderately long,low
+SgF3d,extreme,>1,short,short,<1,medium,moderately long,moderate,moderately long,low
+SgF1e,high,>1,short,short,<<1,low,from short to moderately short,low,short,low
+SgF2e,very high,>1,short,short,<<1,low,from short to moderately short,low,short,low
+SgF3e,extreme,>1,short,short,<<1,low,from short to moderately short,low,short,low
+SgF1m,high,>1,short,short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+SgF2m,very high,>1,short,short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+SgF3m,extreme,>1,short,short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+SmT3r,high,>1,moderately short,moderately long,>1,high,long or very long,very low,long,medium
+SmT3d,very high,>1,short,moderately short,~1,medium,moderately long,moderate,moderately long,low
+SmT3e,extreme,>1,short,short,<<1,low,from moderately short to moderately long,low,short,low
+SmT3m,very high,>1,short,short,<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+SmS1r,high,>1,moderately short,moderately long,>1,high,long or very long,very low,long,medium
+SmS2r,very high,>1,moderately short,moderately long,>1,high,long or very long,very low,long,medium
+SmS3r,extreme,>1,moderately short,moderately long,>1,high,long or very long,very low,long,medium
+SmS1d,low,>1,short,moderately short,~1,medium,moderately long,moderate,moderately long,low
+SmS2d,moderate,>1,short,moderately short,~1,medium,moderately long,moderate,moderately long,low
+SmS3d,high,>1,short,moderately short,~1,medium,moderately long,moderate,moderately long,low
+SmS1e,low,>1,short,short,<<1,low,from moderately short to moderately long,low,short,low
+SmS2e,moderate,>1,short,short,<<1,low,from moderately short to moderately long,low,short,low
+SmS3e,high,>1,short,short,<<1,low,from moderately short to moderately long,low,short,low
+SmS1m,low,>1,short,short,<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+SmS2m,moderate,>1,short,short,<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+SmS3m,high,>1,short,short,<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+SmF1d,high,>1,short,moderately short,<1,medium,moderately long,moderate,moderately long,medium
+SmF2d,very high,>1,short,moderately short,<1,medium,moderately long,moderate,moderately long,medium
+SmF3d,extreme,>1,short,moderately short,<1,medium,moderately long,moderate,moderately long,medium
+SmF1e,high,>1,short,short,<<1,low,from short to moderately short,low,short,low
+SmF2e,very hight,>1,short,short,<<1,low,from short to moderately short,low,short,low
+SmF3e,extreme,>1,short,short,<<1,low,from short to moderately short,low,short,low
+SmF1m,high,>1,short,short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+SmF2m,very hight,>1,short,short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+SmF3m,extreme,>1,short,short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+SfT3r,high,>1,moderately short,moderately long,>1,high,long or very long,very low,long,medium
+SfT3d,very high,>1,short,moderately short,~1,medium,moderately long,moderate,moderately long,low
+SfT3e,extreme,>1,short,short,<<1,low,from moderately short to moderately long,low,short,low
+SfT3m,very high,>1,short,short,<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+SfS1r,high,>1,moderately short,moderately long,>1,high,long or very long,very low,long,medium
+SfS2r,very high,>1,moderately short,moderately long,>1,high,long or very long,very low,long,medium
+SfS3r,extreme,>1,moderately short,moderately long,>1,high,long or very long,very low,long,medium
+SfS1d,low,>1,short,moderately short,~1,medium,moderately long,moderate,moderately long,low
+SfS2d,moderate,>1,short,moderately short,~1,medium,moderately long,moderate,moderately long,low
+SfS3d,high,>1,short,moderately short,~1,medium,moderately long,moderate,moderately long,low
+SfS1e,low,>1,short,short,<<1,low,from moderately short to moderately long,low,short,low
+SfS2e,moderate,>1,short,short,<<1,low,from moderately short to moderately long,low,short,low
+SfS3e,high,>1,short,short,<<1,low,from moderately short to moderately long,low,short,low
+SfS1m,low,>1,short,short,<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+SfS2m,moderate,>1,short,short,<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+SfS3m,high,>1,short,short,<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+SfF1d,high,>1,short,moderately short,<1,medium,moderately long,moderate,moderately long,medium
+SfF2d,very high,>1,short,moderately short,<1,medium,moderately long,moderate,moderately long,medium
+SfF3d,extreme,>1,short,moderately short,<1,medium,moderately long,moderate,moderately long,medium
+SfF1e,high,>1,short,short,<<1,low,from short to moderately short,low,short,low
+SfF2e,very high,>1,short,short,<<1,low,from short to moderately short,low,short,low
+SfF3e,extreme,>1,short,short,<<1,low,from short to moderately short,low,short,low
+SfF1m,high,>1,short,short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+SfF2m,very high,>1,short,short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+SfF3m,extreme,>1,short,short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",low
+BgT3r,moderate,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately long,~1,high,long or very long,very low,long,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BgT3d,high,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately short,<1,medium,moderately long,moderate,moderately long,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BgT3e,very high,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",short,<<1,low,from moderately short to moderately long,low,short,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BgT3m,high,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)","Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BgS1r,moderate,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately long,~1,high,long or very long,very low,long,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BgS2r,high,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately long,~1,high,long or very long,very low,long,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BgS3r,very high,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately long,~1,high,long or very long,very low,long,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BgS1d,very low,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately short,<1,medium,moderately long,moderate,moderately long,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BgS2d,low,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately short,<1,medium,moderately long,moderate,moderately long,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BgS3d,moderate,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately short,<1,medium,moderately long,moderate,moderately long,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BgS1e,very low,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",short,<<1,low,from moderately short to moderately long,low,short,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BgS2e,low,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",short,<<1,low,from moderately short to moderately long,low,short,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BgS3e,moderate,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",short,<<1,low,from moderately short to moderately long,low,short,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BgS1m,very low,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)","Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BgS2m,low,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)","Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BgS3m,moderate,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)","Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BgF1d,moderate,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately short,<<1,medium,moderately long,moderate,moderately long,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BgF2d,high,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately short,<<1,medium,moderately long,moderate,moderately long,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BgF3d,very high,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately short,<<1,medium,moderately long,moderate,moderately long,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BgF1e,moderate,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",short,<<1,low,from short to moderately short,low,short,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BgF2e,high,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",short,<<1,low,from short to moderately short,low,short,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BgF3e,very high,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",short,<<1,low,from short to moderately short,low,short,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BgF1m,moderate,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)","Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BgF2m,high,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)","Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BgF3m,very high,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)","Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmT3r,moderate,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",long,~1,high,long or very long,very low,long,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmT3d,high,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately long,<1,medium,moderately long,moderate,moderately long,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmT3e,very high,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately short,<<1,low,from moderately short to moderately long,low,short,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmT3m,high,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)","Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmS1r,moderate,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",long,~1,high,long or very long,very low,long,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmS2r,high,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",long,~1,high,long or very long,very low,long,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmS3r,very high,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",long,~1,high,long or very long,very low,long,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmS1d,very low,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately long,<1,medium,moderately long,moderate,moderately long,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmS2d,low,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately long,<1,medium,moderately long,moderate,moderately long,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmS3d,moderate,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately long,<1,medium,moderately long,moderate,moderately long,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmS1e,very low,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately short,<<1,low,from moderately short to moderately long,low,short,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmS2e,low,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately short,<<1,low,from moderately short to moderately long,low,short,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmS3e,moderate,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately short,<<1,low,from moderately short to moderately long,low,short,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmS1m,very low,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)","Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmS2m,low,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)","Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmS3m,moderate,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)","Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmF1d,moderate,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately long,<<1,medium,moderately long,moderate,moderately long,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmF2d,high,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately long,<<1,medium,moderately long,moderate,moderately long,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmF3d,very high,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately long,<<1,medium,moderately long,moderate,moderately long,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmF1e,moderate,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately short,<<1,low,from short to moderately short,low,short,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmF2e,high,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately short,<<1,low,from short to moderately short,low,short,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmF3e,very high,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately short,<<1,low,from short to moderately short,low,short,"Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmF1m,moderate,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)","Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmF2m,high,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)","Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+BmF3m,very high,~1,"Not assessable a priori, because it is strictly dependent on the discharge value, which can be very variable",moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)","Very difficult to evaluate, because it depends on the time of formation of the lake which, in turn, depends mainly on the discharge value (which can be very variable)"
+MgT3r,moderate,~1,moderately long,long,~1,high,long or very long,very low,long,high
+MgT3d,high,~1,moderately short,moderately long,<1,medium,moderately long,moderate,moderately long,medium
+MgT3e,very high,~1,moderately short,moderately short,<<1,low,from moderately short to moderately long,low,short,medium
+MgT3m,high,~1,moderately short,moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+MgS1r,moderate,~1,moderately long,long,~1,high,long or very long,very low,long,high
+MgS2r,high,~1,moderately long,long,~1,high,long or very long,very low,long,high
+MgS3r,very high,~1,moderately long,long,~1,high,long or very long,very low,long,high
+MgS1d,very low,~1,moderately short,moderately long,<1,medium,moderately long,moderate,moderately long,medium
+MgS2d,low,~1,moderately short,moderately long,<1,medium,moderately long,moderate,moderately long,medium
+MgS3d,moderate,~1,moderately short,moderately long,<1,medium,moderately long,moderate,moderately long,medium
+MgS1e,very low,~1,moderately short,moderately short,<<1,low,from moderately short to moderately long,low,short,medium
+MgS2e,low,~1,moderately short,moderately short,<<1,low,from moderately short to moderately long,low,short,medium
+MgS3e,moderate,~1,moderately short,moderately short,<<1,low,from moderately short to moderately long,low,short,medium
+MgS1m,very low,~1,moderately short,moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+MgS2m,low,~1,moderately short,moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+MgS3m,moderate,~1,moderately short,moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+MgF1d,moderate,~1,moderately short,moderately long,<<1,medium,moderately long,moderate,moderately long,medium
+MgF2d,high,~1,moderately short,moderately long,<<1,medium,moderately long,moderate,moderately long,medium
+MgF3d,very high,~1,moderately short,moderately long,<<1,medium,moderately long,moderate,moderately long,medium
+MgF1e,moderate,~1,moderately short,moderately short,<<1,low,from short to moderately short,low,short,medium
+MgF2e,high,~1,moderately short,moderately short,<<1,low,from short to moderately short,low,short,medium
+MgF3e,very high,~1,moderately short,moderately short,<<1,low,from short to moderately short,low,short,medium
+MgF1m,moderate,~1,moderately short,moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+MgF2m,high,~1,moderately short,moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+MgF3m,very high,~1,moderately short,moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+MmT3r,moderate,~1,moderately long,long,~1,high,long or very long,very low,long,high
+MmT3d,high,~1,moderately short,long,<1,medium,moderately long,moderate,moderately long,medium
+MmT3e,very high,~1,moderately short,moderately long,<<1,low,from moderately short to moderately long,low,short,medium
+MmT3m,high,~1,moderately short,moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+MmS1r,moderate,~1,moderately long,long,~1,high,long or very long,very low,long,high
+MmS2r,high,~1,moderately long,long,~1,high,long or very long,very low,long,high
+MmS3r,very high,~1,moderately long,long,~1,high,long or very long,very low,long,high
+MmS1d,very low,~1,moderately short,long,<1,medium,moderately long,moderate,moderately long,medium
+MmS2d,low,~1,moderately short,long,<1,medium,moderately long,moderate,moderately long,medium
+MmS3d,moderate,~1,moderately short,long,<1,medium,moderately long,moderate,moderately long,medium
+MmS1e,very low,~1,moderately short,moderately long,<<1,low,from moderately short to moderately long,low,short,medium
+MmS2e,low,~1,moderately short,moderately long,<<1,low,from moderately short to moderately long,low,short,medium
+MmS3e,moderate,~1,moderately short,moderately long,<<1,low,from moderately short to moderately long,low,short,medium
+MmS1m,very low,~1,moderately short,long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+MmS2m,low,~1,moderately short,long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+MmS3m,moderate,~1,moderately short,long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+MmF1d,moderate,~1,moderately short,long,<<1,medium,moderately long,moderate,moderately long,medium
+MmF2d,high,~1,moderately short,long,<<1,medium,moderately long,moderate,moderately long,medium
+MmF3d,very high,~1,moderately short,long,<<1,medium,moderately long,moderate,moderately long,medium
+MmF1e,moderate,~1,moderately short,moderately long,<<1,low,from short to moderately short,low,short,medium
+MmF2e,high,~1,moderately short,moderately long,<<1,low,from short to moderately short,low,short,medium
+MmF3e,very high,~1,moderately short,moderately long,<<1,low,from short to moderately short,low,short,medium
+MmF1m,moderate,~1,moderately short,moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+MmF2m,high,~1,moderately short,moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+MmF3m,very high,~1,moderately short,moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+MfT3r,moderate,~1,moderately long,long,~1,high,long or very long,very low,long,high
+MfT3d,high,~1,moderately short,long,<1,medium,moderately long,moderate,moderately long,medium
+MfT3e,very high,~1,moderately short,moderately long,<<1,low,from moderately short to moderately long,low,short,medium
+MfT3m,high,~1,moderately short,moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+MfS1r,moderate,~1,moderately long,long,~1,high,long or very long,very low,long,high
+MfS2r,high,~1,moderately long,long,~1,high,long or very long,very low,long,high
+MfS3r,very high,~1,moderately long,long,~1,high,long or very long,very low,long,high
+MfS1d,very low,~1,moderately short,long,<1,medium,moderately long,moderate,moderately long,medium
+MfS2d,low,~1,moderately short,long,<1,medium,moderately long,moderate,moderately long,medium
+MfS3d,moderate,~1,moderately short,long,<1,medium,moderately long,moderate,moderately long,medium
+MfS1e,very low,~1,moderately short,moderately long,<<1,low,from moderately short to moderately long,low,short,medium
+MfS2e,low,~1,moderately short,moderately long,<<1,low,from moderately short to moderately long,low,short,medium
+MfS3e,moderate,~1,moderately short,moderately long,<<1,low,from moderately short to moderately long,low,short,medium
+MfS1m,very low,~1,moderately short,long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+MfS2m,low,~1,moderately short,long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+MfS3m,moderate,~1,moderately short,long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+MfF1d,moderate,~1,moderately short,long,<<1,medium,moderately long,moderate,moderately long,medium
+MfF2d,high,~1,moderately short,long,<<1,medium,moderately long,moderate,moderately long,medium
+MfF3d,very high,~1,moderately short,long,<<1,medium,moderately long,moderate,moderately long,medium
+MfF1e,moderate,~1,moderately short,moderately long,<<1,low,from short to moderately short,low,short,medium
+MfF2e,high,~1,moderately short,moderately long,<<1,low,from short to moderately short,low,short,medium
+MfF3e,very high,~1,moderately short,moderately long,<<1,low,from short to moderately short,low,short,medium
+MfF1m,moderate,~1,moderately short,moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+MfF2m,high,~1,moderately short,moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+MfF3m,very high,~1,moderately short,moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+WgT3r,moderate,~1,moderately long,from moderately long to long,~1,high,long or very long,very low,long,high
+WgT3d,high,~1,moderately short,from moderately short to moderately long,<1,medium,moderately long,moderate,moderately long,medium
+WgT3e,very high,~1,moderately short,from short to moderately short,<<1,low,from moderately short to moderately long,low,short,medium
+WgT3m,high,~1,moderately short,from short to moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+WgS1r,moderate,~1,moderately long,from moderately long to long,~1,high,long or very long,very low,long,high
+WgS2r,high,~1,moderately long,from moderately long to long,~1,high,long or very long,very low,long,high
+WgS3r,very high,~1,moderately long,from moderately long to long,~1,high,long or very long,very low,long,high
+WgS1d,very low,~1,moderately short,from moderately short to moderately long,<1,medium,moderately long,moderate,moderately long,medium
+WgS2d,low,~1,moderately short,from moderately short to moderately long,<1,medium,moderately long,moderate,moderately long,medium
+WgS3d,moderate,~1,moderately short,from moderately short to moderately long,<1,medium,moderately long,moderate,moderately long,medium
+WgS1e,very low,~1,moderately short,from short to moderately short,<<1,low,from moderately short to moderately long,low,short,medium
+WgS2e,low,~1,moderately short,from short to moderately short,<<1,low,from moderately short to moderately long,low,short,medium
+WgS3e,moderate,~1,moderately short,from short to moderately short,<<1,low,from moderately short to moderately long,low,short,medium
+WgS1m,very low,~1,moderately short,from short to moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+WgS2m,low,~1,moderately short,from short to moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+WgS3m,moderate,~1,moderately short,from short to moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+WgF1d,moderate,~1,moderately short,from moderately short to moderately long,<<1,medium,moderately long,moderate,moderately long,medium
+WgF2d,high,~1,moderately short,from moderately short to moderately long,<<1,medium,moderately long,moderate,moderately long,medium
+WgF3d,very high,~1,moderately short,from moderately short to moderately long,<<1,medium,moderately long,moderate,moderately long,medium
+WgF1e,moderate,~1,moderately short,from short to moderately short,<<1,low,from short to moderately short,low,short,medium
+WgF2e,high,~1,moderately short,from short to moderately short,<<1,low,from short to moderately short,low,short,medium
+WgF3e,very high,~1,moderately short,from short to moderately short,<<1,low,from short to moderately short,low,short,medium
+WgF1m,moderate,~1,moderately short,from short to moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+WgF2m,high,~1,moderately short,from short to moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+WgF3m,very high,~1,moderately short,from short to moderately short,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+WmT3r,moderate,~1,moderately long,from moderately long to long,~1,high,long or very long,very low,long,high
+WmT3d,high,~1,moderately short,from moderately long to long,<1,medium,moderately long,moderate,moderately long,medium
+WmT3e,very high,~1,moderately short,from moderately short to moderately long,<<1,low,from moderately short to moderately long,low,short,medium
+WmT3m,high,~1,moderately short,from moderately short to moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+WmS1r,moderate,~1,moderately long,from moderately long to long,~1,high,long or very long,very low,long,high
+WmS2r,high,~1,moderately long,from moderately long to long,~1,high,long or very long,very low,long,high
+WmS3r,very high,~1,moderately long,from moderately long to long,~1,high,long or very long,very low,long,high
+WmS1d,very low,~1,moderately short,from moderately long to long,<1,medium,moderately long,moderate,moderately long,medium
+WmS2d,low,~1,moderately short,from moderately long to long,<1,medium,moderately long,moderate,moderately long,medium
+WmS3d,moderate,~1,moderately short,from moderately long to long,<1,medium,moderately long,moderate,moderately long,medium
+WmS1e,very low,~1,moderately short,from moderately short to moderately long,<<1,low,from moderately short to moderately long,low,short,medium
+WmS2e,low,~1,moderately short,from moderately short to moderately long,<<1,low,from moderately short to moderately long,low,short,medium
+WmS3e,moderate,~1,moderately short,from moderately short to moderately long,<<1,low,from moderately short to moderately long,low,short,medium
+WmS1m,very low,~1,moderately short,from moderately short to moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+WmS2m,low,~1,moderately short,from moderately short to moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+WmS3m,moderate,~1,moderately short,from moderately short to moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+WmF1d,moderate,~1,moderately short,from moderately long to long,<<1,medium,moderately long,moderate,moderately long,medium
+WmF2d,high,~1,moderately short,from moderately long to long,<<1,medium,moderately long,moderate,moderately long,medium
+WmF3d,very high,~1,moderately short,from moderately long to long,<<1,medium,moderately long,moderate,moderately long,medium
+WmF1e,moderate,~1,moderately short,from moderately short to moderately long,<<1,low,from short to moderately short,low,short,medium
+WmF2e,high,~1,moderately short,from moderately short to moderately long,<<1,low,from short to moderately short,low,short,medium
+WmF3e,very high,~1,moderately short,from moderately short to moderately long,<<1,low,from short to moderately short,low,short,medium
+WmF1m,moderate,~1,moderately short,from moderately short to moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+WmF2m,high,~1,moderately short,from moderately short to moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+WmF3m,very high,~1,moderately short,from moderately short to moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+WfT3r,moderate,~1,moderately long,from moderately long to long,~1,high,long or very long,very low,long,high
+WfT3d,high,~1,moderately short,from moderately long to long,<1,medium,moderately long,moderate,moderately long,medium
+WfT3e,very high,~1,moderately short,from moderately short to moderately long,<<1,low,from moderately short to moderately long,low,short,medium
+WfT3m,high,~1,moderately short,from moderately short to moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+WfS1r,moderate,~1,moderately long,from moderately long to long,~1,high,long or very long,very low,long,high
+WfS2r,high,~1,moderately long,from moderately long to long,~1,high,long or very long,very low,long,high
+WfS3r,very high,~1,moderately long,from moderately long to long,~1,high,long or very long,very low,long,high
+WfS1d,very low,~1,moderately short,from moderately long to long,<1,medium,moderately long,moderate,moderately long,medium
+WfS2d,low,~1,moderately short,from moderately long to long,<1,medium,moderately long,moderate,moderately long,medium
+WfS3d,moderate,~1,moderately short,from moderately long to long,<1,medium,moderately long,moderate,moderately long,medium
+WfS1e,very low,~1,moderately short,from moderately short to moderately long,<<1,low,from moderately short to moderately long,low,short,medium
+WfS2e,low,~1,moderately short,from moderately short to moderately long,<<1,low,from moderately short to moderately long,low,short,medium
+WfS3e,moderate,~1,moderately short,from moderately short to moderately long,<<1,low,from moderately short to moderately long,low,short,medium
+WfS1m,very low,~1,moderately short,from moderately short to moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+WfS2m,low,~1,moderately short,from moderately short to moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+WfS3m,moderate,~1,moderately short,from moderately short to moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+WfF1d,moderate,~1,moderately short,from moderately long to long,<<1,medium,moderately long,moderate,moderately long,medium
+WfF2d,high,~1,moderately short,from moderately long to long,<<1,medium,moderately long,moderate,moderately long,medium
+WfF3d,very high,~1,moderately short,from moderately long to long,<<1,medium,moderately long,moderate,moderately long,medium
+WfF1e,moderate,~1,moderately short,from moderately short to moderately long,<<1,low,from short to moderately short,low,short,medium
+WfF2e,high,~1,moderately short,from moderately short to moderately long,<<1,low,from short to moderately short,low,short,medium
+WfF3e,very high,~1,moderately short,from moderately short to moderately long,<<1,low,from short to moderately short,low,short,medium
+WfF1m,moderate,~1,moderately short,from moderately short to moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+WfF2m,high,~1,moderately short,from moderately short to moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+WfF3m,very high,~1,moderately short,from moderately short to moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium`;
+		
+        let damTypeData = {};
+
+        // *** FUNZIONE DI PARSING ROBUSTA E DEFINITIVA ***
+        function parseDamDetailsCSV(csv) {
+            const lines = csv.split('\n').filter(line => line.trim() !== '');
+            
+            // Regex per dividere per virgole, ignorando quelle all'interno delle virgolette
+            const csvRegex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
+
+            // La riga di intestazione ha una virgola iniziale, gestiamola
+            const headerParts = lines[0].substring(1).split(csvRegex);
+            const headers = ['LANDSLIDE DAM TYPE', ...headerParts.map(h => h.trim())];
+            
+            damTypeData = {}; 
+
+            for (let i = 1; i < lines.length; i++) {
+                // Usa la stessa regex per dividere le righe di dati
+                const parts = lines[i].split(csvRegex);
+                if (parts.length > 0 && parts[0]) {
+                    const code = parts[0].trim();
+                    let rowData = {};
+                    for (let j = 0; j < headers.length; j++) {
+                        // Rimuovi le virgolette dal valore e pulisci gli spazi
+                        const value = (parts[j] || '').replace(/"/g, '').trim();
+                        rowData[headers[j]] = value;
+                    }
+                    damTypeData[code] = rowData;
+                }
+            }
+        }
+
+        const susceptibilityCsvData = `,,,,
+,Frane con probabilità di formazione del lago: from extreme to very high,,
+,CLASSI DI SUSCETTIBILITA',,
+,Volume (m^3),Velocità (Classi Varnes),,
+,,1,2,3
+,< 1.000,Lieve,Lieve,Lieve
+,1.000 – 10.000,Lieve,Media,Media
+,10.000 – 100.000,Media,Media,Elevata
+,100.000 – 1 ml,Media,Elevata,Elevata
+,1 ml – 10 ml,Elevata,Elevata,Molto Elevata
+,10 ml – 100 ml,Elevata,Molto Elevata,Molto Elevata
+,> 100 ml,Molto Elevata,Molto Elevata,Molto Elevata
+,,,,
+,,,,
+,Frane con probabilità di formazione del lago: from high to moderate,,
+,CLASSI DI SUSCETTIBILITA',,
+,Volume (m^3),Velocità (Classi Varnes),,
+,,1,2,3
+,< 1.000,Lieve,Lieve,Lieve
+,1.000 – 10.000,Lieve,Lieve,Media
+,10.000 – 100.000,Lieve,Media,Media
+,100.000 – 1 ml,Media,Media,Elevata
+,1 ml – 10 ml,Media,Elevata,Elevata
+,10 ml – 100 ml,Elevata,Elevata,Molto Elevata
+,> 100 ml,Elevata,Molto Elevata,Molto Elevata
+,,,,
+,,,,
+,Frane con probabilità di formazione del lago: from low to very low,,
+,CLASSI DI SUSCETTIBILITA',,
+,Volume (m^3),Velocità (Classi Varnes),,
+,,1,2,3
+,< 1.000,Lieve,Lieve,Lieve
+,1.000 – 10.000,Lieve,Lieve,Lieve
+,10.000 – 100.000,Lieve,Lieve,Media
+,100.000 – 1 ml,Lieve,Media,Media
+,1 ml – 10 ml,Media,Media,Elevata
+,10 ml – 100 ml,Media,Elevata,Molto Elevata
+,> 100 ml,Elevata,Molto Elevata,Molto Elevata`;
+
+        let susceptibilityData = {};
+
+        function parseSusceptibilityCSV(csv) {
+            const lines = csv.split('\n').map(line => line.trim());
+            const block1Start = lines.findIndex(line => line.includes('extreme to very high'));
+            const block1End = lines.findIndex((line, index) => index > block1Start && line.startsWith(',,,,'));
+            if (block1Start !== -1 && block1End !== -1) {
+                susceptibilityData['extreme to very high'] = parseSusceptibilityBlock(lines.slice(block1Start + 4, block1End));
+            }
+            const block2Start = lines.findIndex(line => line.includes('high to moderate'));
+            const block2End = lines.findIndex((line, index) => index > block2Start && line.startsWith(',,,,'));
+            if (block2Start !== -1) {
+                 susceptibilityData['high to moderate'] = parseSusceptibilityBlock(lines.slice(block2Start + 4, block2End));
+            }
+			const block3Start = lines.findIndex(line => line.includes('low to very low'));
+            const block3End = lines.length;
+            if (block3Start !== -1) {
+                 susceptibilityData['low to very low'] = parseSusceptibilityBlock(lines.slice(block3Start + 4, block3End));
+            }
+        }
+
+        function parseSusceptibilityBlock(blockLines) {
+            const block = {};
+            const volumeRanges = [
+                '< 1.000', '1.000 – 10.000', '10.000 – 100.000', '100.000 – 1 ml',
+                '1 ml – 10 ml', '10 ml – 100 ml', '> 100 ml'
+            ];
+            const velocityColumns = { '1': 2, '2': 3, '3': 4 };
+            blockLines.forEach((line) => {
+                const parts = line.split(',');
+                if (parts.length > 1 && parts[1].trim() !== '') {
+                    const volume = parts[1].trim();
+                    if (volumeRanges.includes(volume)) {
+                        block[volume] = {};
+                        for (const velCode in velocityColumns) {
+                            block[volume][velCode] = parts[velocityColumns[velCode]]?.trim() || 'N/A';
+                        }
+                    }
+                }
+            });
+            return block;
+        }
+
+        parseDamDetailsCSV(damDetailsCsvData);
+        parseSusceptibilityCSV(susceptibilityCsvData);
+
+        function renderQuestion(title, question, options, stateKey) {
+            let optionsHtml = options.map((option) => {
+                const isSelected = appState.selections[stateKey]?.code === option.code;
+                return `
+                <div>
+                    <input type="radio" name="${stateKey}" id="${stateKey}-${option.code}" value="${option.code}" class="hidden custom-radio" ${isSelected ? 'checked' : ''}>
+                    <label for="${stateKey}-${option.code}" class="block cursor-pointer border-2 border-gray-200 rounded-lg p-4 text-center hover:border-blue-400 transition-all">
+                        <span class="font-semibold text-gray-700">${option.name}</span>
+                    </label>
+                </div>`;
+            }).join('');
+            contentContainer.innerHTML = `<div class="fade-in"><h2 class="text-xl font-semibold text-gray-700 mb-2">${title}</h2><p class="text-gray-600 mb-6">${question}</p><div class="grid grid-cols-1 sm:grid-cols-2 gap-4">${optionsHtml}</div></div>`;
+            document.querySelectorAll(`input[name="${stateKey}"]`).forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    appState.selections[stateKey] = options.find(opt => opt.code === e.target.value);
+                    updateNavigation();
+                });
+            });
+            updateNavigation();
+        }
+
+        function updateProgressBar() {
+            const totalSteps = stepKeys.length;
+            const progress = appState.currentStep > 0 ? (appState.currentStep / totalSteps) * 100 : 0;
+            progressBar.style.width = `${progress}%`;
+        }
+        
+        function renderStep() {
+            updateProgressBar();
+            prevBtn.disabled = appState.currentStep === 0;
+
+            if (appState.currentStep >= stepKeys.length) {
+                renderResult();
+                return;
+            }
+
+            const currentKey = stepKeys[appState.currentStep];
+            let questionTitle = categoryLabels[currentKey];
+            let questionText = `Seleziona l'opzione per: ${questionTitle}`;
+            let options = classificationData[currentKey];
+
+            if (currentKey === 'riverbed' && appState.selections.alluvialPlain) {
+                options = appState.selections.alluvialPlain.code === 'A' 
+                    ? classificationData.riverbed.filter(opt => opt.code === 'F')
+                    : classificationData.riverbed.filter(opt => opt.code !== 'F');
+                if (appState.selections.riverbed && !options.some(opt => opt.code === appState.selections.riverbed.code)) {
+                    appState.selections.riverbed = null;
+                }
+            } else if (currentKey === 'grainSize' && appState.selections.riverbed?.code === 'B') {
+                options = classificationData.grainSize.filter(opt => opt.code !== 'f');
+                 if (appState.selections.grainSize && !options.some(opt => opt.code === appState.selections.grainSize.code)) {
+                    appState.selections.grainSize = null;
+                }
+            } else if (currentKey === 'velocity' && appState.selections.landslideType?.code === 'T') {
+                appState.selections.velocity = classificationData.velocity.find(v => v.code === '3');
+                appState.currentStep++;
+                renderStep();
+                return;
+            }
+            
+            renderQuestion(questionTitle, questionText, options, currentKey);
+            updateNavigation();
+        }
+
+        function calculateSusceptibilityClass(probability, volumeCode, velocityCode) {
+            let susceptibilityBlockKey = '';
+            const probLower = (probability || '').toLowerCase().trim();
+            if (probLower.includes('extreme') || probLower.includes('very high')) {
+                susceptibilityBlockKey = 'extreme to very high';
+            } else if (probLower.includes('high') || probLower.includes('moderate')) {
+                susceptibilityBlockKey = 'high to moderate';
+            } else if (probLower.includes('low') || probLower.includes('very low')) {
+                susceptibilityBlockKey = 'low to very low';
+            } else {
+                return 'Non definibile (Probabilità Lago Sconosciuta)';
+            }
+            const dataBlock = susceptibilityData[susceptibilityBlockKey];
+            if (dataBlock && dataBlock[volumeCode] && dataBlock[volumeCode][velocityCode]) {
+                return dataBlock[volumeCode][velocityCode];
+            }
+            return 'Non definibile (Combinazione non trovata)';
+        }
+
+        function renderResult() {
+            const { riverbed, grainSize, landslideType, velocity, material, alluvialPlain, volume } = appState.selections;
+            const classificationCode = `${riverbed.code}${grainSize.code}${landslideType.code}${velocity.code}${material.code}`;
+            const description = `La frana classificata, ${alluvialPlain.description}, ha sbarrato ${riverbed.description}, ${grainSize.description}. Lo sbarramento è stato causato da ${landslideType.description}, ${velocity.description}, con un volume di ${volume.name}, che ha interessato materiale ${material.name}.`;
+            
+            let additionalDescriptionHtml = '';
+
+            if (landslideType.code === 'C') {
+                additionalDescriptionHtml = `
+                    <h3 class="font-semibold text-gray-700 mt-4 mb-2">Dettagli Aggiuntivi per Frana Complessa (${classificationCode}):</h3>
+                    <div class="p-3 my-1 rounded-md level-neutral text-sm">
+                        <strong>Nota:</strong> Per le frane complesse, la valutazione degli effetti dipende dal cinematismo che ha causato lo sbarramento. Come da schema di riferimento, si raccomanda di approfondire l'analisi:
+                        <br><i>"For complex landslides, see the type of movement that causes the dam"</i>.
+                    </div>
+                `;
+            } else {
+                const detailedDamInfo = damTypeData[classificationCode];
+                if (detailedDamInfo) {
+                    const relevantKeys = Object.keys(detailedDamInfo).filter(key => key !== 'LANDSLIDE DAM TYPE' && detailedDamInfo[key]);
+                    const filteredDetails = relevantKeys.map(key => {
+                        const value = detailedDamInfo[key];
+                        const levelClass = getLevelColorClass(key, value);
+                        const cleanValue = value.split(', because')[0].split(' (it depends')[0];
+                        return `<li class="p-2 my-1 rounded-md ${levelClass}"><strong>${key.replace(/_/g, ' ')}</strong>: ${cleanValue}</li>`;
+                    }).join('');
+
+                    if (filteredDetails) {
+                        additionalDescriptionHtml = `
+                            <h3 class="font-semibold text-gray-700 mt-4 mb-2">Dettagli Aggiuntivi Ricavati dal Database (${classificationCode}):</h3>
+                            <ul class="list-none text-sm text-gray-800 space-y-1">${filteredDetails}</ul>
+                        `;
+                    }
+                } else {
+                     additionalDescriptionHtml = `<p class="text-sm text-red-600 mt-4 p-2 bg-red-50 rounded border border-red-200">Attenzione: Nessun dettaglio aggiuntivo trovato nel database per il codice generato (${classificationCode}). La combinazione di parametri selezionata potrebbe non essere presente nello schema di riferimento.</p>`;
+                }
+            }
+
+            const probabilityOfLakeFormation = (landslideType.code !== 'C' && damTypeData[classificationCode]) ? damTypeData[classificationCode]['Probability of lake formation'] : null;
+            const susceptibilityClass = calculateSusceptibilityClass(probabilityOfLakeFormation, volume.code, velocity.code);
+            
+            let susceptibilityColorClass = 'level-neutral';
+            if (susceptibilityClass === 'Lieve') susceptibilityColorClass = 'level-green';
+            else if (susceptibilityClass === 'Media') susceptibilityColorClass = 'level-yellow';
+            else if (susceptibilityClass === 'Elevata' || susceptibilityClass === 'Molto Elevata') susceptibilityColorClass = 'level-red';
+
+            const barcodeItems = [
+                { label: 'Pianura Alluv.', value: alluvialPlain.name, color: colorMap.alluvialPlain[alluvialPlain.name] },
+                { label: 'Tipo Alveo', value: riverbed.name, color: colorMap.riverbed[riverbed.name] },
+                { label: 'Granulometria', value: grainSize.name, color: colorMap.grainSize[grainSize.name] },
+                { label: 'Tipo Frana', value: landslideType.name, color: colorMap.landslideType[landslideType.name] },
+                { label: 'Velocità', value: velocity.name, color: colorMap.velocity[velocity.name] },
+                { label: 'Volume', value: volume.name, color: colorMap.volume[volume.name] },
+                { label: 'Materiale', value: material.name, color: colorMap.material[material.name] }
+            ];
+
+            const colorBarHtml = barcodeItems.map(item => `<div class="h-full flex-1" style="background-color: ${item.color};" title="${item.label}: ${item.value}"></div>`).join('');
+            
+            let colorScalesHtml = '';
+            for (const categoryKey in classificationData) {
+                const options = classificationData[categoryKey];
+                let scaleItemsHtml = options.map(option => `
+                    <div class="flex items-center space-x-2">
+                        <div class="w-4 h-4 rounded-sm border" style="background-color: ${colorMap[categoryKey][option.name]};"></div>
+                        <span class="text-xs">${option.name}</span>
+                    </div>`).join('');
+                colorScalesHtml += `
+                    <div class="p-3 bg-gray-50 rounded-lg">
+                        <p class="font-semibold text-sm text-gray-800 mb-2">${categoryLabels[categoryKey]}</p>
+                        <div class="flex flex-wrap gap-x-4 gap-y-2">${scaleItemsHtml}</div>
+                    </div>`;
+            }
+
+            contentContainer.innerHTML = `
+                <div class="fade-in">
+                    <div id="pdf-content" class="bg-white">
+                        <div id="report-header" class="mb-6">
+                            <h2 id="pdf-landslide-title" class="text-2xl font-bold text-center text-gray-700 break-words">&nbsp;</h2>
+                        </div>
+                        <div class="space-y-6">
+                            <div class="p-4 bg-white rounded-lg border">
+                                <p class="text-center font-semibold text-gray-700 mb-2">Landslide Dams Barcode</p>
+                                <div class="w-full h-10 flex rounded-lg overflow-hidden shadow-inner border">${colorBarHtml}</div>
+                                <p class="text-center text-5xl font-bold text-blue-600 tracking-wider mt-4">${classificationCode}</p>
+                            </div>
+                            <div class="p-4 bg-white rounded-lg border">
+                                 <p class="font-semibold text-gray-700 mb-2">Descrizione Generale</p>
+                                 <p class="text-sm text-gray-600">${description.replace(/\s+/g, ' ').trim()}</p>
+                                 ${additionalDescriptionHtml}
+                            </div>
+                            <div class="p-4 bg-white rounded-lg border ${susceptibilityColorClass}">
+                                <p class="font-semibold text-gray-700 mb-2">Classe di Suscettibilità alla Formazione di un Lago</p>
+                                <p class="text-lg font-bold text-center">${susceptibilityClass}</p>
+                            </div>
+                            <div class="p-4 bg-white rounded-lg border">
+                                <p class="font-semibold text-gray-700 mb-3">Riferimento Scale Cromatiche</p>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">${colorScalesHtml}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="pre-pdf-controls" class="my-6 p-4 border-t border-b">
+                        <label for="landslide-name-input" class="block text-sm font-medium text-gray-700 text-center mb-2">Nome Classificazione (opzionale)</label>
+                        <input type="text" id="landslide-name-input" class="w-full sm:w-2/3 mx-auto block border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Es. Frana del Vajont, 1963">
+                    </div>
+                    <div id="action-buttons" class="text-center mt-6 flex flex-col sm:flex-row justify-center gap-4">
+                         <button id="save-pdf-btn" class="bg-green-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-green-700 transition-colors w-full sm:w-auto">Salva come PDF</button>
+                         <button id="reset-btn" class="bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto">Nuova Classificazione</button>
+                    </div>
+                </div>`;
+            navigation.style.visibility = 'hidden';
+            progressContainer.style.visibility = 'hidden';
+            document.getElementById('reset-btn').addEventListener('click', init);
+            document.getElementById('save-pdf-btn').addEventListener('click', generatePDF);
+            document.getElementById('landslide-name-input').addEventListener('input', (e) => {
+                document.getElementById('pdf-landslide-title').textContent = e.target.value || '\u00A0';
+            });
+        }
+        
+        async function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const saveBtn = document.getElementById('save-pdf-btn');
+            const appHeader = document.getElementById('app-header');
+            const pdfContent = document.getElementById('pdf-content');
+            
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Generazione in corso...';
+
+            const printableArea = document.createElement('div');
+            printableArea.style.position = 'absolute';
+            printableArea.style.left = '-9999px';
+            printableArea.style.width = '1200px';
+            
+            printableArea.appendChild(appHeader.cloneNode(true));
+            printableArea.appendChild(pdfContent.cloneNode(true));
+            document.body.appendChild(printableArea);
+
+            try {
+                const canvas = await html2canvas(printableArea, { scale: 2, useCORS: true, logging: false });
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                const canvasAspectRatio = canvas.width / canvas.height;
+                
+                let finalPdfWidth = pdfWidth - 20;
+                let finalPdfHeight = finalPdfWidth / canvasAspectRatio;
+
+                if (finalPdfHeight > pdfHeight - 20) {
+                    finalPdfHeight = pdfHeight - 20;
+                    finalPdfWidth = finalPdfHeight * canvasAspectRatio;
+                }
+
+                pdf.addImage(imgData, 'PNG', (pdfWidth - finalPdfWidth) / 2, 10, finalPdfWidth, finalPdfHeight);
+                
+                const landslideName = document.getElementById('landslide-name-input').value.trim();
+                const fileName = landslideName ? `classificazione-${landslideName.replace(/\s+/g, '_')}.pdf` : 'classificazione-landslide-dam.pdf';
+                pdf.save(fileName);
+
+            } catch (err) {
+                console.error("Errore durante la generazione del PDF:", err);
+                alert("Si è verificato un errore durante la generazione del PDF.");
+            } finally {
+                document.body.removeChild(printableArea);
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Salva come PDF';
+            }
+        }
+
+        function updateNavigation() {
+            prevBtn.disabled = appState.currentStep === 0;
+            const currentKey = stepKeys[appState.currentStep];
+            nextBtn.disabled = !appState.selections[currentKey];
+            stepIndicator.textContent = `Passo ${appState.currentStep + 1} di ${stepKeys.length}`;
+            updateProgressBar();
+        }
+
+        function init() {
+            appState.currentStep = 0;
+            for (let key in appState.selections) { appState.selections[key] = null; }
+            navigation.style.visibility = 'visible';
+            progressContainer.style.visibility = 'visible';
+            renderStep();
+        }
+
+        nextBtn.addEventListener('click', () => {
+             if (appState.currentStep < stepKeys.length) {
+                appState.currentStep++;
+                renderStep();
+            }
+        });
+        
+        prevBtn.addEventListener('click', () => {
+            if (appState.currentStep > 0) {
+                appState.currentStep--;
+                if (appState.selections.landslideType?.code === 'T' && appState.currentStep === 4) {
+                    appState.currentStep--;
+                }
+                renderStep();
+            }
+        });
+
+        init();
+    </script>
+</body>
+</html>
