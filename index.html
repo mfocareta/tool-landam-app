@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tool di Classificazione Landslide Dams</title>
+    <title>Landslide Dam Classification Tool</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,7 +23,7 @@
             transition: width 0.4s ease-in-out;
         }
 
-        /* Colori per i livelli di rischio/impatto */
+        /* Colors for risk/impact levels */
         .level-green { background-color: #d4edda; color: #155724; border-left: 4px solid #28a745; padding: 0.5rem; margin-bottom: 0.25rem; border-radius: 0.25rem;}
         .level-yellow { background-color: #fff3cd; color: #856404; border-left: 4px solid #ffc107; padding: 0.5rem; margin-bottom: 0.25rem; border-radius: 0.25rem;}
         .level-red { background-color: #f8d7da; color: #721c24; border-left: 4px solid #dc3545; padding: 0.5rem; margin-bottom: 0.25rem; border-radius: 0.25rem;}
@@ -35,8 +35,8 @@
     <div id="app" class="w-full max-w-5xl bg-white rounded-2xl shadow-lg p-6 md:p-8">
         
         <header id="app-header" class="text-center mb-4">
-            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Tool di Classificazione Landslide Dams</h1>
-            <p class="text-gray-500 mt-1">Guida interattiva per la classificazione degli sbarramenti da frana.</p>
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Landslide Dam Classification Tool</h1>
+            <p class="text-gray-500 mt-1">Interactive guide for the classification of landslide dams.</p>
         </header>
 
         <div id="progress-container" class="w-full bg-gray-200 rounded-full h-2.5 mb-6">
@@ -44,59 +44,57 @@
         </div>
         
         <div id="code-preview-container" class="text-center mb-6 h-12 p-2 bg-gray-50 rounded-lg flex items-center justify-center">
-            <span class="text-gray-600 font-medium mr-2">Codice in Composizione:</span>
+            <span class="text-gray-600 font-medium mr-2">Code Under Construction:</span>
             <span class="text-gray-800 font-mono text-xl font-bold" id="code-preview"></span>
         </div>
 
         <main id="content-container">
-            <p class="text-center text-gray-500 p-8">Inizializzazione dell'applicazione...</p>
+            <p class="text-center text-gray-500 p-8">Initializing application...</p>
         </main>
 
         <footer id="navigation" class="mt-8 flex justify-between items-center" style="visibility: hidden;">
-            <button id="prev-btn" class="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50">Indietro</button>
+            <button id="prev-btn" class="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50">Back</button>
             <div id="step-indicator" class="text-sm text-gray-500"></div>
-            <button id="next-btn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">Avanti</button>
+            <button id="next-btn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">Next</button>
         </footer>
 
     </div>
 
     <script>
-        console.log("Tool di Classificazione: Script avviato.");
+        console.log("Classification Tool: Script started.");
 
         const classificationData = {
-            alluvialPlain: [{ name: 'Presente', code: 'P', description: 'in un contesto con pianura alluvionale' }, { name: 'Assente', code: 'A', description: 'in un contesto senza pianura alluvionale' }],
-            riverbed: [{ name: 'Fisso', code: 'F', description: 'un alveo fisso (F)' }, { name: 'Rettilineo a barre alternate', code: 'S', description: 'un alveo rettilineo a barre alternate (S)' }, { name: 'Intrecciato', code: 'B', description: 'un alveo intrecciato (B)' }, { name: 'Sinuoso / Meandriforme', code: 'M', description: 'un alveo sinuoso/meandriforme (M)' }, { name: 'Divagante (Wandering)', code: 'W', description: 'un alveo divagante (Wandering, W)' }],
-            grainSize: [{ name: 'Grossolana (ghiaia)', code: 'g', description: 'con trasporto solido grossolano' }, { name: 'Media (sabbia)', code: 'm', description: 'con trasporto solido di medie dimensioni' }, { name: 'Fine (limo/argilla)', code: 'f', description: 'con trasporto solido fine' }],
-            landslideType: [{ name: 'Ribaltamento / Crollo', code: 'T', description: 'un ribaltamento/crollo' }, { name: 'Scivolamento (Rot./Trasl.)', code: 'S', description: 'uno scivolamento' }, { name: 'Colamento', code: 'F', description: 'un colamento' }, { name: 'Complessa', code: 'C', description: 'una frana complessa' }],
-            velocity: [{ name: 'Classe 1 (lenta)', code: '1', description: 'lenta (Classe 1)' }, { name: 'Classe 2 (moderata)', code: '2', description: 'moderata (Classe 2)' }, { name: 'Classe 3 (rapida)', code: '3', description: 'rapida (Classe 3)' }],
-            material: [{ name: 'Roccia', code: 'r', description: 'roccia' }, { name: 'Detrito', code: 'd', description: 'detrito' }, { name: 'Terra', code: 'e', description: 'terra' }, { name: 'Misto', code: 'm', description: 'materiale misto' }],
+            alluvialPlain: [{ name: 'Present', code: 'P', description: 'in an alluvial plain context' }, { name: 'Absent', code: 'A', description: 'in a context without an alluvial plain' }],
+            riverbed: [{ name: 'Fixed', code: 'F', description: 'a fixed riverbed (F)' }, { name: 'Straight with alternate bars', code: 'S', description: 'a straight riverbed with alternate bars (S)' }, { name: 'Braided', code: 'B', description: 'a braided riverbed (B)' }, { name: 'Sinuous / Meandering', code: 'M', description: 'a sinuous/meandering riverbed (M)' }, { name: 'Wandering', code: 'W', description: 'a wandering riverbed (W)' }],
+            grainSize: [{ name: 'Coarse (gravel)', code: 'g', description: 'with coarse sediment transport' }, { name: 'Medium (sand)', code: 'm', description: 'with medium-sized sediment transport' }, { name: 'Fine (silt/clay)', code: 'f', description: 'with fine sediment transport' }],
+            landslideType: [{ name: 'Topple / Fall', code: 'T', description: 'a topple/fall' }, { name: 'Slide (Rot./Transl.)', code: 'S', description: 'a slide' }, { name: 'Flow', code: 'F', description: 'a flow' }, { name: 'Complex', code: 'C', description: 'a complex landslide' }],
+            velocity: [{ name: 'Class 1 (slow)', code: '1', description: 'slow (Class 1)' }, { name: 'Class 2 (moderate)', code: '2', description: 'moderate (Class 2)' }, { name: 'Class 3 (rapid)', code: '3', description: 'rapid (Class 3)' }],
+            material: [{ name: 'Rock', code: 'r', description: 'rock' }, { name: 'Debris', code: 'd', description: 'debris' }, { name: 'Earth', code: 'e', description: 'earth' }, { name: 'Mixed', code: 'm', description: 'mixed material' }],
             volume: [
-                { name: '< 1.000 m³', code: '< 1.000' },
-                { name: '1.000 – 10.000 m³', code: '1.000 – 10.000' },
-                { name: '10.000 – 100.000 m³', code: '10.000 – 100.000' },
-                { name: '100.000 – 1 ml m³', code: '100.000 – 1 ml' },
-                { name: '1 ml – 10 ml m³', code: '1 ml – 10 ml' },
-                { name: '10 ml – 100 ml m³', code: '10 ml – 100 ml' },
-                { name: '> 100 ml m³', code: '> 100 ml' }
+                { name: '< 1,000 m³', code: '< 1.000' },
+                { name: '1,000 – 10,000 m³', code: '1.000 – 10.000' },
+                { name: '10,000 – 100,000 m³', code: '10.000 – 100.000' },
+                { name: '100,000 – 1M m³', code: '100.000 – 1 ml' },
+                { name: '1M – 10M m³', code: '1 ml – 10 ml' },
+                { name: '10M – 100M m³', code: '10 ml – 100 ml' },
+                { name: '> 100M m³', code: '> 100 ml' }
             ]
         };
-
+        
         const colorMap = {
-            alluvialPlain: { 'Presente': '#a7f3d0', 'Assente': '#fecaca' },
-            riverbed: { 'Fisso': '#67e8f9', 'Rettilineo a barre alternate': '#a5b4fc', 'Intrecciato': '#f0abfc', 'Sinuoso / Meandriforme': '#fdba74', 'Divagante (Wandering)': '#fde047' },
-            grainSize: { 'Grossolana (ghiaia)': '#fca5a5', 'Media (sabbia)': '#fdba74', 'Fine (limo/argilla)': '#d4d4d8' },
-            landslideType: { 'Ribaltamento / Crollo': '#ef4444', 'Scivolamento (Rot./Trasl.)': '#f97316', 'Colamento': '#eab308', 'Complessa': '#84cc16' },
-            velocity: { 'Classe 1 (lenta)': '#22c55e', 'Classe 2 (moderata)': '#f59e0b', 'Classe 3 (rapida)': '#dc2626' },
-            material: { 'Roccia': '#78716c', 'Detrito': '#ca8a04', 'Terra': '#a16207', 'Misto': '#d6d3d1' },
+            alluvialPlain: { 'Present': '#a7f3d0', 'Absent': '#fecaca' },
+            riverbed: { 'Fixed': '#67e8f9', 'Straight with alternate bars': '#a5b4fc', 'Braided': '#f0abfc', 'Sinuous / Meandering': '#fdba74', 'Wandering': '#fde047' },
+            grainSize: { 'Coarse (gravel)': '#fca5a5', 'Medium (sand)': '#fdba74', 'Fine (silt/clay)': '#d4d4d8' },
+            landslideType: { 'Topple / Fall': '#ef4444', 'Slide (Rot./Transl.)': '#f97316', 'Flow': '#eab308', 'Complex': '#84cc16' },
+            velocity: { 'Class 1 (slow)': '#22c55e', 'Class 2 (moderate)': '#f59e0b', 'Class 3 (rapid)': '#dc2626' },
+            material: { 'Rock': '#78716c', 'Debris': '#ca8a04', 'Earth': '#a16207', 'Mixed': '#d6d3d1' },
             volume: {
-                '< 1.000 m³': '#d1e7dd', '1.000 – 10.000 m³': '#cff4fc',
-                '10.000 – 100.000 m³': '#e2e3e5', '100.000 – 1 ml m³': '#f8d7da',
-                '1 ml – 10 ml m³': '#dbe7c9', '10 ml – 100 ml m³': '#f0e68c',
-                '> 100 ml m³': '#ffc0cb'
+                '< 1,000 m³': '#d1e7dd', '1,000 – 10,000 m³': '#cff4fc',
+                '10,000 – 100,000 m³': '#e2e3e5', '100,000 – 1M m³': '#f8d7da',
+                '1M – 10M m³': '#dbe7c9', '10M – 100M m³': '#f0e68c',
+                '> 100M m³': '#ffc0cb'
             }
         };
-        // Add detailedLandslideType to colorMap
-        colorMap.detailedLandslideType = colorMap.landslideType;
 
         const riskLevelMapping = {
             'Probability of lake formation': { 'extreme': 'red', 'very high': 'red', 'high': 'yellow', 'moderate': 'yellow', 'low': 'green', 'very low': 'green' },
@@ -123,13 +121,13 @@
         }
 
         const categoryLabels = {
-            alluvialPlain: 'Pianura Alluvionale',
-            riverbed: 'Tipologia di Alveo',
-            grainSize: 'Granulometria',
-            landslideType: 'Tipologia di Frana',
-            velocity: 'Velocità',
-            material: 'Materiale',
-            volume: 'Volume della Frana'
+            alluvialPlain: 'Alluvial Plain',
+            riverbed: 'Riverbed Type',
+            grainSize: 'Grain Size',
+            landslideType: 'Landslide Type',
+            velocity: 'Velocity',
+            material: 'Material',
+            volume: 'Landslide Volume'
         };
         
         const appState = {
@@ -495,7 +493,7 @@ WfC1m,"For complex landslides, see the type of movement that causes the dam",~1,
 		
         let damTypeData = {};
 
-        // *** FUNZIONE DI PARSING ROBUSTA E DEFINITIVA ***
+        // *** ROBUST AND FINAL PARSING FUNCTION ***
         function parseDamDetailsCSV(csv) {
             const lines = csv.split('\n').filter(line => line.trim() !== '');
             const csvRegex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
@@ -613,7 +611,6 @@ WfC1m,"For complex landslides, see the type of movement that causes the dam",~1,
             });
         }
         
-        // LOGICA DEGLI STEP SEMPLIFICATA
         const stepKeys = ['alluvialPlain', 'riverbed', 'grainSize', 'landslideType', 'velocity', 'volume', 'material'];
 
         function renderStep() {
@@ -627,7 +624,7 @@ WfC1m,"For complex landslides, see the type of movement that causes the dam",~1,
             
             const currentKey = stepKeys[appState.currentStep];
             let questionTitle = categoryLabels[currentKey];
-            let questionText = `Seleziona l'opzione per: ${questionTitle}`;
+            let questionText = `Select the option for: ${questionTitle}`;
             let options = classificationData[currentKey];
 
             if (currentKey === 'riverbed' && appState.selections.alluvialPlain) {
@@ -660,13 +657,13 @@ WfC1m,"For complex landslides, see the type of movement that causes the dam",~1,
             } else if (probLower.includes('low') || probLower.includes('very low')) {
                 susceptibilityBlockKey = 'low to very low';
             } else {
-                return 'Non definibile';
+                return 'Undefined';
             }
             const dataBlock = susceptibilityData[susceptibilityBlockKey];
             if (dataBlock && dataBlock[volumeCode] && dataBlock[volumeCode][velocityCode]) {
                 return dataBlock[volumeCode][velocityCode];
             }
-            return 'Non definibile';
+            return 'Undefined';
         }
         
         function renderResult() {
@@ -674,18 +671,16 @@ WfC1m,"For complex landslides, see the type of movement that causes the dam",~1,
             const { riverbed, grainSize, landslideType, velocity, material, alluvialPlain, volume } = appState.selections;
 
             const classificationCode = `${riverbed.code}${grainSize.code}${landslideType.code}${velocity.code}${material.code}`;
-            const description = `Lo sbarramento è stato causato da **${landslideType.description}**. L'evento, avvenuto ${alluvialPlain.description}, ha interessato ${riverbed.description} ${grainSize.description}. Il movimento ha avuto una velocità **${velocity.description}**, coinvolgendo un volume di **${volume.name}** in materiale di tipo **${material.description}**.`;
+            const description = `The dam was caused by **${landslideType.description}**. The event, which occurred ${alluvialPlain.description}, affected ${riverbed.description} ${grainSize.description}. The movement had a **${velocity.description}** velocity, involving a volume of **${volume.name}** of **${material.description}** material.`;
 
             const damInfo = damTypeData[classificationCode];
             let additionalDescriptionHtml = '';
 
-            // Gestione del messaggio per frane complesse
             if (damInfo && damInfo["Probability of lake formation"].toLowerCase().includes('complex')) {
                  additionalDescriptionHtml = `
-                    <h3 class="font-semibold text-gray-700 mt-4 mb-2">Dettagli Aggiuntivi per Frana Complessa (${classificationCode}):</h3>
+                    <h3 class="font-semibold text-gray-700 mt-4 mb-2">Additional Details for Complex Landslide (${classificationCode}):</h3>
                     <div class="p-3 my-1 rounded-md level-neutral text-sm">
-                        <strong>Nota:</strong> Per le frane complesse, la valutazione degli effetti dipende dal cinematismo che ha causato lo sbarramento. Come da schema di riferimento, si raccomanda di approfondire l'analisi:
-                        <br><i>"For complex landslides, see the type of movement that causes the dam"</i>.
+                        <strong>Note:</strong> For complex landslides, the evaluation of the effects depends on the type of movement that causes the dam. As per the reference scheme, further analysis is recommended.
                     </div>
                 `;
             } else if (damInfo) {
@@ -699,12 +694,12 @@ WfC1m,"For complex landslides, see the type of movement that causes the dam",~1,
 
                 if (filteredDetails) {
                     additionalDescriptionHtml = `
-                        <h3 class="font-semibold text-gray-700 mt-4 mb-2">Dettagli Aggiuntivi (codice: ${classificationCode}):</h3>
+                        <h3 class="font-semibold text-gray-700 mt-4 mb-2">Additional Details (code: ${classificationCode}):</h3>
                         <ul class="list-none text-sm text-gray-800 space-y-1">${filteredDetails}</ul>
                     `;
                 }
             } else {
-                 additionalDescriptionHtml = `<p class="text-sm text-red-600 mt-4 p-2 bg-red-50 rounded border border-red-200">Attenzione: Nessun dettaglio trovato nel database per il codice generato (${classificationCode}).</p>`;
+                 additionalDescriptionHtml = `<p class="text-sm text-red-600 mt-4 p-2 bg-red-50 rounded border border-red-200">Warning: No details found in the database for the generated code (${classificationCode}).</p>`;
             }
 
             const probabilityOfLakeFormation = damInfo ? damInfo['Probability of lake formation'] : null;
@@ -716,20 +711,20 @@ WfC1m,"For complex landslides, see the type of movement that causes the dam",~1,
             else if (susceptibilityClass === 'High' || susceptibilityClass === 'Very High') susceptibilityColorClass = 'level-red';
 
             const barcodeItems = [
-                { label: 'Pianura Alluv.', value: alluvialPlain.name, color: colorMap.alluvialPlain[alluvialPlain.name] },
-                { label: 'Tipo Alveo', value: riverbed.name, color: colorMap.riverbed[riverbed.name] },
-                { label: 'Granulometria', value: grainSize.name, color: colorMap.grainSize[grainSize.name] },
-                { label: 'Tipo Frana', value: landslideType.name, color: colorMap.landslideType[landslideType.name] },
-                { label: 'Velocità', value: velocity.name, color: colorMap.velocity[velocity.name] },
+                { label: 'Alluvial Plain', value: alluvialPlain.name, color: colorMap.alluvialPlain[alluvialPlain.name] },
+                { label: 'Riverbed Type', value: riverbed.name, color: colorMap.riverbed[riverbed.name] },
+                { label: 'Grain Size', value: grainSize.name, color: colorMap.grainSize[grainSize.name] },
+                { label: 'Landslide Type', value: landslideType.name, color: colorMap.landslideType[landslideType.name] },
+                { label: 'Velocity', value: velocity.name, color: colorMap.velocity[velocity.name] },
                 { label: 'Volume', value: volume.name, color: colorMap.volume[volume.name] },
-                { label: 'Materiale', value: material.name, color: colorMap.material[material.name] }
+                { label: 'Material', value: material.name, color: colorMap.material[material.name] }
             ];
 
             const colorBarHtml = barcodeItems.map(item => `<div class="h-full flex-1" style="background-color: ${item.color};" title="${item.label}: ${item.value}"></div>`).join('');
             
             let colorScalesHtml = '';
             for (const categoryKey in categoryLabels) {
-                if (categoryKey === 'detailedLandslideType') continue; // Salta questa etichetta
+                if (categoryKey === 'detailedLandslideType') continue; 
                 const options = classificationData[categoryKey];
                 let scaleItemsHtml = options.map(option => `
                     <div class="flex items-center space-x-2">
@@ -756,27 +751,27 @@ WfC1m,"For complex landslides, see the type of movement that causes the dam",~1,
                                 <p class="text-center text-5xl font-bold text-blue-600 tracking-wider mt-4">${classificationCode}</p>
                             </div>
                             <div class="p-4 bg-white rounded-lg border">
-                                 <p class="font-semibold text-gray-700 mb-2">Descrizione Generale</p>
+                                 <p class="font-semibold text-gray-700 mb-2">General Description</p>
                                  <p class="text-sm text-gray-600">${description}</p>
                                  ${additionalDescriptionHtml}
                             </div>
                             <div class="p-4 bg-white rounded-lg border ${susceptibilityColorClass}">
-                                <p class="font-semibold text-gray-700 mb-2">Classe di Suscettibilità alla Formazione di un Lago</p>
+                                <p class="font-semibold text-gray-700 mb-2">Susceptibility Class for Lake Formation</p>
                                 <p class="text-lg font-bold text-center">${susceptibilityClass}</p>
                             </div>
                             <div class="p-4 bg-white rounded-lg border">
-                                <p class="font-semibold text-gray-700 mb-3">Riferimento Scale Cromatiche</p>
+                                <p class="font-semibold text-gray-700 mb-3">Color Scale Legend</p>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">${colorScalesHtml}</div>
                             </div>
                         </div>
                     </div>
                     <div id="pre-pdf-controls" class="my-6 p-4 border-t border-b">
-                        <label for="landslide-name-input" class="block text-sm font-medium text-gray-700 text-center mb-2">Nome Classificazione (opzionale)</label>
-                        <input type="text" id="landslide-name-input" class="w-full sm:w-2/3 mx-auto block border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Es. Frana del Vajont, 1963">
+                        <label for="landslide-name-input" class="block text-sm font-medium text-gray-700 text-center mb-2">Classification Name (optional)</label>
+                        <input type="text" id="landslide-name-input" class="w-full sm:w-2/3 mx-auto block border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="E.g., Vajont Landslide, 1963">
                     </div>
                     <div id="action-buttons" class="text-center mt-6 flex flex-col sm:flex-row justify-center gap-4">
-                         <button id="save-pdf-btn" class="bg-green-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-green-700 transition-colors w-full sm:w-auto">Salva come PDF</button>
-                         <button id="reset-btn" class="bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto">Nuova Classificazione</button>
+                         <button id="save-pdf-btn" class="bg-green-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-green-700 transition-colors w-full sm:w-auto">Save as PDF</button>
+                         <button id="reset-btn" class="bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto">New Classification</button>
                     </div>
                 </div>`;
             navigation.style.visibility = 'hidden';
@@ -795,7 +790,7 @@ WfC1m,"For complex landslides, see the type of movement that causes the dam",~1,
             const pdfContent = document.getElementById('pdf-content');
             
             saveBtn.disabled = true;
-            saveBtn.textContent = 'Generazione in corso...';
+            saveBtn.textContent = 'Generating...';
 
             const printableArea = document.createElement('div');
             printableArea.style.position = 'absolute';
@@ -826,16 +821,16 @@ WfC1m,"For complex landslides, see the type of movement that causes the dam",~1,
                 pdf.addImage(imgData, 'PNG', (pdfWidth - finalPdfWidth) / 2, 10, finalPdfWidth, finalPdfHeight);
                 
                 const landslideName = document.getElementById('landslide-name-input').value.trim();
-                const fileName = landslideName ? `classificazione-${landslideName.replace(/\s+/g, '_')}.pdf` : 'classificazione-landslide-dam.pdf';
+                const fileName = landslideName ? `classification-${landslideName.replace(/\s+/g, '_')}.pdf` : 'classification-landslide-dam.pdf';
                 pdf.save(fileName);
 
             } catch (err) {
-                console.error("Errore durante la generazione del PDF:", err);
-                alert("Si è verificato un errore durante la generazione del PDF.");
+                console.error("Error generating PDF:", err);
+                alert("An error occurred while generating the PDF.");
             } finally {
                 document.body.removeChild(printableArea);
                 saveBtn.disabled = false;
-                saveBtn.textContent = 'Salva come PDF';
+                saveBtn.textContent = 'Save as PDF';
             }
         }
 
@@ -845,10 +840,9 @@ WfC1m,"For complex landslides, see the type of movement that causes the dam",~1,
 
             const { riverbed, grainSize, landslideType, velocity, material } = appState.selections;
             
-            // Auto-set velocity for preview if landslide type is Topple/Fall
             let effectiveVelocity = velocity;
             if (landslideType?.code === 'T' && !velocity) {
-                 effectiveVelocity = classificationData.velocity.find(v => v.code === '3');
+                effectiveVelocity = classificationData.velocity.find(v => v.code === '3');
             }
 
             const parts = [
@@ -865,7 +859,7 @@ WfC1m,"For complex landslides, see the type of movement that causes the dam",~1,
             prevBtn.disabled = appState.currentStep === 0;
             const currentKey = stepKeys[appState.currentStep];
             nextBtn.disabled = !appState.selections[currentKey];
-            stepIndicator.textContent = `Passo ${appState.currentStep + 1} di ${stepKeys.length}`;
+            stepIndicator.textContent = `Step ${appState.currentStep + 1} of ${stepKeys.length}`;
         }
         
         function updateProgressBar() {
@@ -885,7 +879,7 @@ WfC1m,"For complex landslides, see the type of movement that causes the dam",~1,
         nextBtn.addEventListener('click', () => {
              if (nextBtn.disabled) return;
              if (appState.currentStep === 3 && appState.selections.landslideType?.code === 'T') {
-                appState.currentStep = 5; // Salta al volume
+                appState.currentStep = 5;
              } else {
                 appState.currentStep++;
              }
@@ -895,7 +889,7 @@ WfC1m,"For complex landslides, see the type of movement that causes the dam",~1,
         prevBtn.addEventListener('click', () => {
              if (prevBtn.disabled) return;
              if (appState.currentStep === 5 && appState.selections.landslideType?.code === 'T') {
-                appState.currentStep = 3; // Torna al tipo di frana
+                appState.currentStep = 3;
              } else {
                 appState.currentStep--;
              }
