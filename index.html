@@ -24,10 +24,10 @@
         }
 
         /* Colori per i livelli di rischio/impatto */
-        .level-green { background-color: #d4edda; color: #155724; border-left: 4px solid #28a745; padding: 0.5rem; margin-bottom: 0.25rem; border-radius: 0.25rem;} /* Success */
-        .level-yellow { background-color: #fff3cd; color: #856404; border-left: 4px solid #ffc107; padding: 0.5rem; margin-bottom: 0.25rem; border-radius: 0.25rem;} /* Warning */
-        .level-red { background-color: #f8d7da; color: #721c24; border-left: 4px solid #dc3545; padding: 0.5rem; margin-bottom: 0.25rem; border-radius: 0.25rem;} /* Danger */
-        .level-neutral { background-color: #e2e3e5; color: #383d41; border-left: 4px solid #6c757d; padding: 0.5rem; margin-bottom: 0.25rem; border-radius: 0.25rem;} /* Neutral/Info */
+        .level-green { background-color: #d4edda; color: #155724; border-left: 4px solid #28a745; padding: 0.5rem; margin-bottom: 0.25rem; border-radius: 0.25rem;}
+        .level-yellow { background-color: #fff3cd; color: #856404; border-left: 4px solid #ffc107; padding: 0.5rem; margin-bottom: 0.25rem; border-radius: 0.25rem;}
+        .level-red { background-color: #f8d7da; color: #721c24; border-left: 4px solid #dc3545; padding: 0.5rem; margin-bottom: 0.25rem; border-radius: 0.25rem;}
+        .level-neutral { background-color: #e2e3e5; color: #383d41; border-left: 4px solid #6c757d; padding: 0.5rem; margin-bottom: 0.25rem; border-radius: 0.25rem;}
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
@@ -45,7 +45,7 @@
         
         <div id="code-preview-container" class="text-center mb-6 h-12 p-2 bg-gray-50 rounded-lg flex items-center justify-center">
             <span class="text-gray-600 font-medium mr-2">Codice in Composizione:</span>
-            <span class="text-gray-800 font-mono text-xl font-bold" id="code-preview">_ _ _ _ _</span>
+            <span class="text-gray-800 font-mono text-xl font-bold" id="code-preview"></span>
         </div>
 
         <main id="content-container">
@@ -68,11 +68,6 @@
             riverbed: [{ name: 'Fisso', code: 'F', description: 'un alveo fisso (F)' }, { name: 'Rettilineo a barre alternate', code: 'S', description: 'un alveo rettilineo a barre alternate (S)' }, { name: 'Intrecciato', code: 'B', description: 'un alveo intrecciato (B)' }, { name: 'Sinuoso / Meandriforme', code: 'M', description: 'un alveo sinuoso/meandriforme (M)' }, { name: 'Divagante (Wandering)', code: 'W', description: 'un alveo divagante (Wandering, W)' }],
             grainSize: [{ name: 'Grossolana (ghiaia)', code: 'g', description: 'con trasporto solido grossolano' }, { name: 'Media (sabbia)', code: 'm', description: 'con trasporto solido di medie dimensioni' }, { name: 'Fine (limo/argilla)', code: 'f', description: 'con trasporto solido fine' }],
             landslideType: [{ name: 'Ribaltamento / Crollo', code: 'T', description: 'un ribaltamento/crollo' }, { name: 'Scivolamento (Rot./Trasl.)', code: 'S', description: 'uno scivolamento' }, { name: 'Colamento', code: 'F', description: 'un colamento' }, { name: 'Complessa', code: 'C', description: 'una frana complessa' }],
-            detailedLandslideType: [
-                { name: 'Ribaltamento / Crollo', code: 'T', description: 'un ribaltamento/crollo' }, 
-                { name: 'Scivolamento (Rot./Trasl.)', code: 'S', description: 'uno scivolamento' }, 
-                { name: 'Colamento', code: 'F', description: 'un colamento' }
-            ],
             velocity: [{ name: 'Classe 1 (lenta)', code: '1', description: 'lenta (Classe 1)' }, { name: 'Classe 2 (moderata)', code: '2', description: 'moderata (Classe 2)' }, { name: 'Classe 3 (rapida)', code: '3', description: 'rapida (Classe 3)' }],
             material: [{ name: 'Roccia', code: 'r', description: 'roccia' }, { name: 'Detrito', code: 'd', description: 'detrito' }, { name: 'Terra', code: 'e', description: 'terra' }, { name: 'Misto', code: 'm', description: 'materiale misto' }],
             volume: [
@@ -91,7 +86,6 @@
             riverbed: { 'Fisso': '#67e8f9', 'Rettilineo a barre alternate': '#a5b4fc', 'Intrecciato': '#f0abfc', 'Sinuoso / Meandriforme': '#fdba74', 'Divagante (Wandering)': '#fde047' },
             grainSize: { 'Grossolana (ghiaia)': '#fca5a5', 'Media (sabbia)': '#fdba74', 'Fine (limo/argilla)': '#d4d4d8' },
             landslideType: { 'Ribaltamento / Crollo': '#ef4444', 'Scivolamento (Rot./Trasl.)': '#f97316', 'Colamento': '#eab308', 'Complessa': '#84cc16' },
-            detailedLandslideType: { 'Ribaltamento / Crollo': '#ef4444', 'Scivolamento (Rot./Trasl.)': '#f97316', 'Colamento': '#eab308' },
             velocity: { 'Classe 1 (lenta)': '#22c55e', 'Classe 2 (moderata)': '#f59e0b', 'Classe 3 (rapida)': '#dc2626' },
             material: { 'Roccia': '#78716c', 'Detrito': '#ca8a04', 'Terra': '#a16207', 'Misto': '#d6d3d1' },
             volume: {
@@ -101,6 +95,8 @@
                 '> 100 ml m³': '#ffc0cb'
             }
         };
+        // Add detailedLandslideType to colorMap
+        colorMap.detailedLandslideType = colorMap.landslideType;
 
         const riskLevelMapping = {
             'Probability of lake formation': { 'extreme': 'red', 'very high': 'red', 'high': 'yellow', 'moderate': 'yellow', 'low': 'green', 'very low': 'green' },
@@ -131,7 +127,6 @@
             riverbed: 'Tipologia di Alveo',
             grainSize: 'Granulometria',
             landslideType: 'Tipologia di Frana',
-            detailedLandslideType: 'Dettaglio Causa Sbarramento',
             velocity: 'Velocità',
             material: 'Materiale',
             volume: 'Volume della Frana'
@@ -141,8 +136,7 @@
             currentStep: 0,
             selections: { 
                 alluvialPlain: null, riverbed: null, grainSize: null, 
-                landslideType: null, detailedLandslideType: null,
-                velocity: null, volume: null, material: null 
+                landslideType: null, velocity: null, volume: null, material: null 
             }
         };
 
@@ -493,7 +487,11 @@ WfF2e,high,~1,moderately short,from moderately short to moderately long,<<1,low,
 WfF3e,very high,~1,moderately short,from moderately short to moderately long,<<1,low,from short to moderately short,low,short,medium
 WfF1m,moderate,~1,moderately short,from moderately short to moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
 WfF2m,high,~1,moderately short,from moderately short to moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
-WfF3m,very high,~1,moderately short,from moderately short to moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium`;
+WfF3m,very high,~1,moderately short,from moderately short to moderately long,<<1,low,"from moderately short to very long (if boulders are present)","from very low (if boulders are present) to moderate","from moderately short to long (if boulders are present)",medium
+WfC3m,"For complex landslides, see the type of movement that causes the dam",~1,"For complex landslides, see the type of movement that causes the dam","For complex landslides, see the type of movement that causes the dam","For complex landslides, see the type of movement that causes the dam","For complex landslides, see the type of movement that causes the dam","For complex landslides, see the type of movement that causes the dam","For complex landslides, see the type of movement that causes the dam","For complex landslides, see the type of movement that causes the dam","For complex landslides, see the type of movement that causes the dam"
+WfC2m,"For complex landslides, see the type of movement that causes the dam",~1,"For complex landslides, see the type of movement that causes the dam","For complex landslides, see the type of movement that causes the dam","For complex landslides, see the type of movement that causes the dam","For complex landslides, see the type of movement that causes the dam","For complex landslides, see the type of movement that causes the dam","For complex landslides, see the type of movement that causes the dam","For complex landslides, see the type of movement that causes the dam","For complex landslides, see the type of movement that causes the dam"
+WfC1m,"For complex landslides, see the type of movement that causes the dam",~1,"For complex landslides, see the type of movement that causes the dam","For complex landslides, see the type of movement that causes the dam","For complex landslides, see the type of movement that causes the dam","For complex landslides, see the type of movement that causes the dam","For complex landslides, see the type of movement that causes the dam","For complex landslides, see the type of movement that causes the dam","For complex landslides, see the type of movement that causes the dam","For complex landslides, see the type of movement that causes the dam"
+`;
 		
         let damTypeData = {};
 
@@ -518,82 +516,73 @@ WfF3m,very high,~1,moderately short,from moderately short to moderately long,<<1
             }
         }
 
-        const susceptibilityCsvData = `,,,,
-,Frane con probabilità di formazione del lago: from extreme to very high,,
-,CLASSI DI SUSCETTIBILITA',,
-,Volume (m^3),Velocità (Classi Varnes),,
+        const susceptibilityCsvData = `
+,Landslides with lake formation probability: from extreme to very high
+,SUSCEPTIBILITY CLASSES
+,Volume (m^3),Varnes' Velocity Classes
 ,,1,2,3
-,< 1.000,Lieve,Lieve,Lieve
-,1.000 – 10.000,Lieve,Media,Media
-,10.000 – 100.000,Media,Media,Elevata
-,100.000 – 1 ml,Media,Elevata,Elevata
-,1 ml – 10 ml,Elevata,Elevata,Molto Elevata
-,10 ml – 100 ml,Elevata,Molto Elevata,Molto Elevata
-,> 100 ml,Molto Elevata,Molto Elevata,Molto Elevata
-,,,,
-,,,,
-,Frane con probabilità di formazione del lago: from high to moderate,,
-,CLASSI DI SUSCETTIBILITA',,
-,Volume (m^3),Velocità (Classi Varnes),,
+,< 1.000,Low,Low,Low
+,1.000 – 10.000,Low,Medium,Medium
+,10.000 – 100.000,Medium,Medium,High
+,100.000 – 1 ml,Medium,High,High
+,1 ml – 10 ml,High,High,Very High
+,10 ml – 100 ml,High,Very High,Very High
+,> 100 ml,Very High,Very High,Very High
+,
+,Landslides with lake formation probability: from high to moderate
+,SUSCEPTIBILITY CLASSES
+,Volume (m^3),Varnes' Velocity Classes
 ,,1,2,3
-,< 1.000,Lieve,Lieve,Lieve
-,1.000 – 10.000,Lieve,Lieve,Media
-,10.000 – 100.000,Lieve,Media,Media
-,100.000 – 1 ml,Media,Media,Elevata
-,1 ml – 10 ml,Media,Elevata,Elevata
-,10 ml – 100 ml,Elevata,Elevata,Molto Elevata
-,> 100 ml,Elevata,Molto Elevata,Molto Elevata
-,,,,
-,,,,
-,Frane con probabilità di formazione del lago: from low to very low,,
-,CLASSI DI SUSCETTIBILITA',,
-,Volume (m^3),Velocità (Classi Varnes),,
+,< 1.000,Low,Low,Low
+,1.000 – 10.000,Low,Low,Medium
+,10.000 – 100.000,Low,Medium,Medium
+,100.000 – 1 ml,Medium,Medium,High
+,1 ml – 10 ml,Medium,High,High
+,10 ml – 100 ml,High,High,Very High
+,> 100 ml,High,Very High,Very High
+,
+,Landslides with lake formation probability: from low to very low
+,SUSCEPTIBILITY CLASSES
+,Volume (m^3),Varnes' Velocity Classes
 ,,1,2,3
-,< 1.000,Lieve,Lieve,Lieve
-,1.000 – 10.000,Lieve,Lieve,Lieve
-,10.000 – 100.000,Lieve,Lieve,Media
-,100.000 – 1 ml,Lieve,Media,Media
-,1 ml – 10 ml,Media,Media,Elevata
-,10 ml – 100 ml,Media,Elevata,Molto Elevata
-,> 100 ml,Elevata,Molto Elevata,Molto Elevata`;
+,< 1.000,Low,Low,Low
+,1.000 – 10.000,Low,Low,Low
+,10.000 – 100.000,Low,Low,Medium
+,100.000 – 1 ml,Low,Medium,Medium
+,1 ml – 10 ml,Medium,Medium,High
+,10 ml – 100 ml,Medium,High,Very High
+,> 100 ml,High,Very High,Very High
+`;
 
         let susceptibilityData = {};
 
         function parseSusceptibilityCSV(csv) {
-            const lines = csv.split('\n').map(line => line.trim());
+            const lines = csv.split('\n').map(line => line.trim()).filter(line => line);
             const block1Start = lines.findIndex(line => line.includes('extreme to very high'));
-            const block1End = lines.findIndex((line, index) => index > block1Start && line.startsWith(',,,,'));
-            if (block1Start !== -1 && block1End !== -1) {
-                susceptibilityData['extreme to very high'] = parseSusceptibilityBlock(lines.slice(block1Start + 4, block1End));
-            }
             const block2Start = lines.findIndex(line => line.includes('high to moderate'));
-            const block2End = lines.findIndex((line, index) => index > block2Start && line.startsWith(',,,,'));
-            if (block2Start !== -1) {
-                 susceptibilityData['high to moderate'] = parseSusceptibilityBlock(lines.slice(block2Start + 4, block2End));
+            const block3Start = lines.findIndex(line => line.includes('low to very low'));
+            
+            if (block1Start !== -1) {
+                susceptibilityData['extreme to very high'] = parseSusceptibilityBlock(lines.slice(block1Start + 2, block2Start || lines.length));
             }
-			const block3Start = lines.findIndex(line => line.includes('low to very low'));
-            const block3End = lines.length;
-            if (block3Start !== -1) {
-                 susceptibilityData['low to very low'] = parseSusceptibilityBlock(lines.slice(block3Start + 4, block3End));
+            if (block2Start !== -1) {
+                 susceptibilityData['high to moderate'] = parseSusceptibilityBlock(lines.slice(block2Start + 2, block3Start || lines.length));
+            }
+			if (block3Start !== -1) {
+                 susceptibilityData['low to very low'] = parseSusceptibilityBlock(lines.slice(block3Start + 2, lines.length));
             }
         }
 
         function parseSusceptibilityBlock(blockLines) {
             const block = {};
-            const volumeRanges = [
-                '< 1.000', '1.000 – 10.000', '10.000 – 100.000', '100.000 – 1 ml',
-                '1 ml – 10 ml', '10 ml – 100 ml', '> 100 ml'
-            ];
-            const velocityColumns = { '1': 2, '2': 3, '3': 4 };
+            const velocityColumns = { '1': 1, '2': 2, '3': 3 };
             blockLines.forEach((line) => {
                 const parts = line.split(',');
-                if (parts.length > 1 && parts[1].trim() !== '') {
-                    const volume = parts[1].trim();
-                    if (volumeRanges.includes(volume)) {
-                        block[volume] = {};
-                        for (const velCode in velocityColumns) {
-                            block[volume][velCode] = parts[velocityColumns[velCode]]?.trim() || 'N/A';
-                        }
+                if (parts.length > 1 && parts[0]) {
+                    const volume = parts[0].trim();
+                    block[volume] = {};
+                    for (const velCode in velocityColumns) {
+                         block[volume][velCode] = parts[velocityColumns[velCode]]?.trim() || 'N/A';
                     }
                 }
             });
@@ -618,47 +607,27 @@ WfF3m,very high,~1,moderately short,from moderately short to moderately long,<<1
             document.querySelectorAll(`input[name="${stateKey}"]`).forEach(radio => {
                 radio.addEventListener('change', (e) => {
                     appState.selections[stateKey] = options.find(opt => opt.code === e.target.value);
-                    if (stateKey === 'landslideType' && appState.selections.landslideType.code !== 'C') {
-                        appState.selections.detailedLandslideType = null;
-                    }
                     updateCodePreview();
                     updateNavigation();
                 });
             });
         }
-
-        function getVisibleSteps() {
-            const base = ['alluvialPlain', 'riverbed', 'grainSize', 'landslideType'];
-            if (appState.selections.landslideType?.code === 'C') {
-                base.push('detailedLandslideType');
-            }
-            let typeForVelocityCheck = appState.selections.landslideType;
-            if (appState.selections.landslideType?.code === 'C') {
-                typeForVelocityCheck = appState.selections.detailedLandslideType;
-            }
-            if (typeForVelocityCheck?.code !== 'T') {
-                base.push('velocity');
-            }
-            base.push('volume', 'material');
-            return base;
-        }
+        
+        // LOGICA DEGLI STEP SEMPLIFICATA
+        const stepKeys = ['alluvialPlain', 'riverbed', 'grainSize', 'landslideType', 'velocity', 'volume', 'material'];
 
         function renderStep() {
-            const visibleSteps = getVisibleSteps();
-            codePreviewContainer.style.display = 'flex'; // Mostra l'anteprima
+            codePreviewContainer.style.display = 'flex';
             navigation.style.visibility = 'visible';
 
-            if (appState.currentStep >= visibleSteps.length) {
+            if (appState.currentStep >= stepKeys.length) {
                 renderResult();
                 return;
             }
             
-            const currentKey = visibleSteps[appState.currentStep];
+            const currentKey = stepKeys[appState.currentStep];
             let questionTitle = categoryLabels[currentKey];
             let questionText = `Seleziona l'opzione per: ${questionTitle}`;
-            if (currentKey === 'detailedLandslideType') {
-                questionText = 'Dettagliare il tipo di frana che ha provocato lo sbarramento';
-            }
             let options = classificationData[currentKey];
 
             if (currentKey === 'riverbed' && appState.selections.alluvialPlain) {
@@ -701,38 +670,28 @@ WfF3m,very high,~1,moderately short,from moderately short to moderately long,<<1
         }
         
         function renderResult() {
-            codePreviewContainer.style.display = 'none'; // Nasconde l'anteprima nel report finale
-            const { riverbed, grainSize, landslideType, detailedLandslideType, velocity, material, alluvialPlain, volume } = appState.selections;
+            codePreviewContainer.style.display = 'none';
+            const { riverbed, grainSize, landslideType, velocity, material, alluvialPlain, volume } = appState.selections;
 
-            let effectiveLandslideType = landslideType;
-            let effectiveVelocity = velocity;
-            const isComplex = landslideType.code === 'C';
+            const classificationCode = `${riverbed.code}${grainSize.code}${landslideType.code}${velocity.code}${material.code}`;
+            const description = `Lo sbarramento è stato causato da **${landslideType.description}**. L'evento, avvenuto ${alluvialPlain.description}, ha interessato ${riverbed.description} ${grainSize.description}. Il movimento ha avuto una velocità **${velocity.description}**, coinvolgendo un volume di **${volume.name}** in materiale di tipo **${material.description}**.`;
 
-            if (isComplex) {
-                effectiveLandslideType = detailedLandslideType;
-            }
-            
-            if ((effectiveLandslideType?.code === 'T') && !velocity) {
-                effectiveVelocity = classificationData.velocity.find(v => v.code === '3');
-            }
-            
-            const detailedClassificationCode = `${riverbed.code}${grainSize.code}${effectiveLandslideType.code}${effectiveVelocity.code}${material.code}`;
-            const complexClassificationCode = isComplex ? `${riverbed.code}${grainSize.code}${landslideType.code}${effectiveVelocity.code}${material.code}` : detailedClassificationCode;
-            
-            let description = '';
-            if (isComplex) {
-                description = `È stata classificata una frana di tipo **Complessa (C)**. Il cinematismo che ha direttamente causato lo sbarramento è stato **${effectiveLandslideType.description}**. L'evento, avvenuto ${alluvialPlain.description}, ha interessato ${riverbed.description} ${grainSize.description}. Il movimento scatenante ha avuto una velocità **${effectiveVelocity.description}**, coinvolgendo un volume di **${volume.name}** in materiale di tipo **${material.description}**.`;
-            } else {
-                description = `Lo sbarramento è stato causato da **${effectiveLandslideType.description}**. L'evento, avvenuto ${alluvialPlain.description}, ha interessato ${riverbed.description} ${grainSize.description}. Il movimento ha avuto una velocità **${effectiveVelocity.description}**, coinvolgendo un volume di **${volume.name}** in materiale di tipo **${material.description}**.`;
-            }
-
-            const detailedDamInfo = damTypeData[detailedClassificationCode];
+            const damInfo = damTypeData[classificationCode];
             let additionalDescriptionHtml = '';
 
-            if (detailedDamInfo) {
-                const relevantKeys = Object.keys(detailedDamInfo).filter(key => key !== 'LANDSLIDE DAM TYPE' && detailedDamInfo[key]);
+            // Gestione del messaggio per frane complesse
+            if (damInfo && damInfo["Probability of lake formation"].toLowerCase().includes('complex')) {
+                 additionalDescriptionHtml = `
+                    <h3 class="font-semibold text-gray-700 mt-4 mb-2">Dettagli Aggiuntivi per Frana Complessa (${classificationCode}):</h3>
+                    <div class="p-3 my-1 rounded-md level-neutral text-sm">
+                        <strong>Nota:</strong> Per le frane complesse, la valutazione degli effetti dipende dal cinematismo che ha causato lo sbarramento. Come da schema di riferimento, si raccomanda di approfondire l'analisi:
+                        <br><i>"For complex landslides, see the type of movement that causes the dam"</i>.
+                    </div>
+                `;
+            } else if (damInfo) {
+                const relevantKeys = Object.keys(damInfo).filter(key => key !== 'LANDSLIDE DAM TYPE' && damInfo[key]);
                 const filteredDetails = relevantKeys.map(key => {
-                    const value = detailedDamInfo[key];
+                    const value = damInfo[key];
                     const levelClass = getLevelColorClass(key, value);
                     const cleanValue = value.split(', because')[0].split(' (it depends')[0];
                     return `<li class="p-2 my-1 rounded-md ${levelClass}"><strong>${key.replace(/_/g, ' ')}</strong>: ${cleanValue}</li>`;
@@ -740,44 +699,37 @@ WfF3m,very high,~1,moderately short,from moderately short to moderately long,<<1
 
                 if (filteredDetails) {
                     additionalDescriptionHtml = `
-                        <h3 class="font-semibold text-gray-700 mt-4 mb-2">Dettagli Aggiuntivi (basati su cod. ${detailedClassificationCode}):</h3>
+                        <h3 class="font-semibold text-gray-700 mt-4 mb-2">Dettagli Aggiuntivi (codice: ${classificationCode}):</h3>
                         <ul class="list-none text-sm text-gray-800 space-y-1">${filteredDetails}</ul>
                     `;
                 }
             } else {
-                 additionalDescriptionHtml = `<p class="text-sm text-red-600 mt-4 p-2 bg-red-50 rounded border border-red-200">Attenzione: Nessun dettaglio aggiuntivo trovato nel database per il codice di dettaglio generato (${detailedClassificationCode}).</p>`;
+                 additionalDescriptionHtml = `<p class="text-sm text-red-600 mt-4 p-2 bg-red-50 rounded border border-red-200">Attenzione: Nessun dettaglio trovato nel database per il codice generato (${classificationCode}).</p>`;
             }
 
-            const probabilityOfLakeFormation = detailedDamInfo ? detailedDamInfo['Probability of lake formation'] : null;
-            const susceptibilityClass = calculateSusceptibilityClass(probabilityOfLakeFormation, volume.code, effectiveVelocity.code);
+            const probabilityOfLakeFormation = damInfo ? damInfo['Probability of lake formation'] : null;
+            const susceptibilityClass = calculateSusceptibilityClass(probabilityOfLakeFormation, volume.code, velocity.code);
             
             let susceptibilityColorClass = 'level-neutral';
-            if (susceptibilityClass === 'Lieve') susceptibilityColorClass = 'level-green';
-            else if (susceptibilityClass === 'Media') susceptibilityColorClass = 'level-yellow';
-            else if (susceptibilityClass === 'Elevata' || susceptibilityClass === 'Molto Elevata') susceptibilityColorClass = 'level-red';
+            if (susceptibilityClass === 'Low') susceptibilityColorClass = 'level-green';
+            else if (susceptibilityClass === 'Medium') susceptibilityColorClass = 'level-yellow';
+            else if (susceptibilityClass === 'High' || susceptibilityClass === 'Very High') susceptibilityColorClass = 'level-red';
 
             const barcodeItems = [
                 { label: 'Pianura Alluv.', value: alluvialPlain.name, color: colorMap.alluvialPlain[alluvialPlain.name] },
                 { label: 'Tipo Alveo', value: riverbed.name, color: colorMap.riverbed[riverbed.name] },
                 { label: 'Granulometria', value: grainSize.name, color: colorMap.grainSize[grainSize.name] },
                 { label: 'Tipo Frana', value: landslideType.name, color: colorMap.landslideType[landslideType.name] },
-                { label: 'Velocità', value: effectiveVelocity.name, color: colorMap.velocity[effectiveVelocity.name] },
+                { label: 'Velocità', value: velocity.name, color: colorMap.velocity[velocity.name] },
                 { label: 'Volume', value: volume.name, color: colorMap.volume[volume.name] },
                 { label: 'Materiale', value: material.name, color: colorMap.material[material.name] }
             ];
 
             const colorBarHtml = barcodeItems.map(item => `<div class="h-full flex-1" style="background-color: ${item.color};" title="${item.label}: ${item.value}"></div>`).join('');
             
-            let detailedCodeHtml = '';
-            if (isComplex) {
-                detailedCodeHtml = `
-                    <p class="text-center text-gray-700 font-semibold mt-4">Codice Frana che ha prodotto lo sbarramento:</p>
-                    <p class="text-center text-3xl font-bold text-blue-600 tracking-wider mt-1">${detailedClassificationCode}</p>
-                `;
-            }
-
             let colorScalesHtml = '';
             for (const categoryKey in categoryLabels) {
+                if (categoryKey === 'detailedLandslideType') continue; // Salta questa etichetta
                 const options = classificationData[categoryKey];
                 let scaleItemsHtml = options.map(option => `
                     <div class="flex items-center space-x-2">
@@ -799,10 +751,9 @@ WfF3m,very high,~1,moderately short,from moderately short to moderately long,<<1
                         </div>
                         <div class="space-y-6">
                             <div class="p-4 bg-white rounded-lg border">
-                                <p class="text-center font-semibold text-gray-700 mb-2">Landslide Dams Barcode (Classificazione Generale)</p>
+                                <p class="text-center font-semibold text-gray-700 mb-2">Landslide Dams Barcode</p>
                                 <div class="w-full h-10 flex rounded-lg overflow-hidden shadow-inner border">${colorBarHtml}</div>
-                                <p class="text-center text-5xl font-bold text-blue-600 tracking-wider mt-4">${complexClassificationCode}</p>
-                                ${detailedCodeHtml}
+                                <p class="text-center text-5xl font-bold text-blue-600 tracking-wider mt-4">${classificationCode}</p>
                             </div>
                             <div class="p-4 bg-white rounded-lg border">
                                  <p class="font-semibold text-gray-700 mb-2">Descrizione Generale</p>
@@ -892,13 +843,12 @@ WfF3m,very high,~1,moderately short,from moderately short to moderately long,<<1
             const previewEl = document.getElementById('code-preview');
             if (!previewEl) return;
 
-            const { riverbed, grainSize, landslideType, detailedLandslideType, velocity, material } = appState.selections;
-            const isComplex = landslideType?.code === 'C';
+            const { riverbed, grainSize, landslideType, velocity, material } = appState.selections;
             
+            // Auto-set velocity for preview if landslide type is Topple/Fall
             let effectiveVelocity = velocity;
-            let typeForVelocityCheck = isComplex ? detailedLandslideType : landslideType;
-            if (typeForVelocityCheck?.code === 'T' && !velocity) {
-                effectiveVelocity = classificationData.velocity.find(v => v.code === '3');
+            if (landslideType?.code === 'T' && !velocity) {
+                 effectiveVelocity = classificationData.velocity.find(v => v.code === '3');
             }
 
             const parts = [
@@ -912,16 +862,14 @@ WfF3m,very high,~1,moderately short,from moderately short to moderately long,<<1
         }
 
         function updateNavigation() {
-            const visibleSteps = getVisibleSteps();
             prevBtn.disabled = appState.currentStep === 0;
-            const currentKey = visibleSteps[appState.currentStep];
+            const currentKey = stepKeys[appState.currentStep];
             nextBtn.disabled = !appState.selections[currentKey];
-            stepIndicator.textContent = `Passo ${appState.currentStep + 1} di ${visibleSteps.length}`;
+            stepIndicator.textContent = `Passo ${appState.currentStep + 1} di ${stepKeys.length}`;
         }
         
         function updateProgressBar() {
-            const visibleSteps = getVisibleSteps();
-            const progress = appState.currentStep > 0 ? (appState.currentStep / (visibleSteps.length -1) ) * 100 : 0;
+            const progress = appState.currentStep > 0 ? (appState.currentStep / (stepKeys.length -1) ) * 100 : 0;
             progressBar.style.width = `${progress}%`;
         }
 
@@ -936,16 +884,21 @@ WfF3m,very high,~1,moderately short,from moderately short to moderately long,<<1
 
         nextBtn.addEventListener('click', () => {
              if (nextBtn.disabled) return;
-             appState.currentStep++;
+             if (appState.currentStep === 3 && appState.selections.landslideType?.code === 'T') {
+                appState.currentStep = 5; // Salta al volume
+             } else {
+                appState.currentStep++;
+             }
              renderStep();
         });
         
         prevBtn.addEventListener('click', () => {
              if (prevBtn.disabled) return;
-             if(getVisibleSteps()[appState.currentStep] === 'detailedLandslideType') {
-                appState.selections.detailedLandslideType = null;
+             if (appState.currentStep === 5 && appState.selections.landslideType?.code === 'T') {
+                appState.currentStep = 3; // Torna al tipo di frana
+             } else {
+                appState.currentStep--;
              }
-             appState.currentStep--;
              renderStep();
         });
 
