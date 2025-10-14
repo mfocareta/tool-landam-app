@@ -56,7 +56,7 @@ Essendo un'applicazione puramente client-side, non è richiesta alcuna installaz
 
 Sviluppato da **<Mariano Focareta / MapSat> <Lorenzo Girolamo / MapSat> <Gianna Ida Festa / MapSat>**
 
-*Questo tool è stato concettualizzato da umani e sviluppato con il supporto dell'assistente AI Gemini*
+*Questo tool è stato concepito e progettato da umani e sviluppato con il supporto dell'assistente AI Gemini*
 
 ## Licenza
 
